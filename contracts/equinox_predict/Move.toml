@@ -1,0 +1,12 @@
+[package]
+name = "equinox_predict"
+edition = "2024.beta"
+version = "0.1.0"
+
+[dependencies]
+# DeepBook Predict (live on Sui testnet, branch predict-testnet-4-16).
+# Transitively pulls deepbook, token, Sui, MoveStdlib.
+deepbook_predict = { git = "https://github.com/MystenLabs/deepbookv3.git", subdir = "packages/predict", rev = "predict-testnet-4-16" }
+
+[addresses]
+equinox_predict = "0x0"
