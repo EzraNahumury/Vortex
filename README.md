@@ -1,4 +1,4 @@
-# Equinox — PLP + Hedge Vault on DeepBook Predict
+# Vortex — PLP + Hedge Vault on DeepBook Predict
 
 A structured-yield vault built on **DeepBook Predict** for **Sui Overflow**. Deposit dUSDC,
 earn the Predict LP maker spread, and ride a small **signed crash-hedge sleeve** that buys
@@ -15,7 +15,7 @@ position is a portable `VAULT_SHARE` coin.
 
 | Track ask | What we built |
 | --- | --- |
-| Vault strategies allocating across Predict positions + PLP supply | `equinox_predict::vault` supplies dUSDC to PLP **and** mints OTM binary hedges, atomically, from one shared vault |
+| Vault strategies allocating across Predict positions + PLP supply | `vortex_predict::vault` supplies dUSDC to PLP **and** mints OTM binary hedges, atomically, from one shared vault |
 | Tokenized share tokens on top of Predict so positions plug into Sui DeFi | Deposits mint a fungible `VAULT_SHARE` coin (portable as collateral / LP / structured-product leg) |
 | Keeper / orchestration using `redeem_permissionless` + the public server | `scripts/keeper.mts` signs + submits legs and redeems settled hedges; reads the public indexer |
 | Analytics that make Predict legible | `/predict` page renders a **live SVI vol smile** + strike ladder streamed from the indexer |
@@ -27,10 +27,10 @@ position is a portable `VAULT_SHARE` coin.
 
 | Component | ID |
 | --- | --- |
-| **Our vault package** `equinox_predict` | `0xd4d556eea3435ff1f2a102b784ba1cc00a116c277513f73242409ad762a55e39` |
-| **PredictVault\<DUSDC\>** (shared) | `0x14e0ef423ca0d50e0b47b0b225ad3fd510cc2ca2ce6cafc7d4bcabf25596c391` |
-| Keeper-owned **PredictManager** | `0x0de4ed88b9c7e7c2fe60b9cb064c45580884389f1cc800f31584366856aa1711` |
-| `VAULT_SHARE` TreasuryCap (held by vault) | `0x5bcd8c2326c271e7ed01d4034a8e13bfae8f9a69870882a7fbe2f6dd7329bfb1` |
+| **Our vault package** `vortex_predict` | `0x185d97299f82a6380e99779eaed8a51833dada528c05b39e3f537eb01a266e83` |
+| **PredictVault\<DUSDC\>** (shared) | `0xa45ebd4f8c87d7c3d1e4cfe20adb4de9594aa5439bb703685facc7bb7c1314f3` |
+| Keeper-owned **PredictManager** | `0xd38f54d9dbeba98121e81ab39fddd559e2b63577ceecf5404a1e63ad90c9b0fb` |
+| `VAULT_SHARE` TreasuryCap (held by vault) | `0x7cfeecdbea4c0dbe0815c9b36f7d916e3650e2b2a08acd51a78b898f3fa01342` |
 
 Composing against the live **DeepBook Predict** protocol (branch `predict-testnet-4-16`):
 
@@ -72,7 +72,7 @@ Network: **Sui Testnet**. Get testnet dUSDC via the DeepBook form: https://tally
 The strategist can never move funds arbitrarily. Each leg carries an ed25519 signature over
 the exact `(amount, market, nonce)` tuple, checked on-chain against the vault's registered
 strategist key, with a **strictly increasing nonce** for replay protection. The byte layouts
-in `lib/predict/strategist.ts` match `equinox_predict::vault` exactly, so anyone can re-derive
+in `lib/predict/strategist.ts` match `vortex_predict::vault` exactly, so anyone can re-derive
 and audit which allocation was authorized.
 
 ---
@@ -98,16 +98,16 @@ trusting absolute APY.)
 ## Repo layout
 
 ```
-contracts/equinox_predict/        # the Predict vault package (this submission)
+contracts/vortex_predict/        # the Predict vault package (this submission)
   sources/vault.move              # PredictVault: deposit/withdraw + signed supply/hedge/redeem legs
   sources/vault_share.move        # VAULT_SHARE tokenized share coin
   tests/vault_tests.move          # shares, NAV-on-idle withdraw, ed25519 verify (RFC 8032 vector)
-equinox-interface/
+vortex-interface/
   lib/predict/                    # config, predict-server client, SVI math, tx builders, strategist signer
   app/predict/page.tsx            # vault UI: deposit/withdraw, live SVI smile, strike ladder
   scripts/simulate-plp-hedge.mts  # strategy back-test → SIMULATION.md
   scripts/keeper.mts              # strategist+keeper: sign & submit legs, redeem settled hedges
-contracts/equinox/                # prior work: the Equinox order-book lending protocol (separate)
+contracts/vortex/                # prior work: the Vortex order-book lending protocol (separate)
 ```
 
 ---
@@ -117,7 +117,7 @@ contracts/equinox/                # prior work: the Equinox order-book lending p
 ### Move package
 
 ```bash
-cd contracts/equinox_predict
+cd contracts/vortex_predict
 sui move build          # links against the deployed Predict package
 sui move test           # 5 tests incl. on-chain ed25519 verification
 ```
@@ -129,7 +129,7 @@ sui move test           # 5 tests incl. on-chain ed25519 verification
 ### Frontend
 
 ```bash
-cd equinox-interface
+cd vortex-interface
 npm install
 npm run dev             # http://localhost:3000/predict
 ```
@@ -139,7 +139,7 @@ Defaults in `lib/predict/config.ts` already point at the live deployment — no 
 ### Keeper / strategist + simulation
 
 ```bash
-cd equinox-interface
+cd vortex-interface
 npx tsx scripts/keeper.mts status                 # read vault + live oracles
 npx tsx scripts/keeper.mts allocate 80 2          # sign+submit: supply 80, hedge budget 2 dUSDC
 npx tsx scripts/simulate-plp-hedge.mts            # regenerate SIMULATION.md
@@ -158,7 +158,7 @@ Keeper needs `DEPLOYER_MNEMONIC` (keeper wallet) and `STRATEGIST_SK` in `.env.lo
 
 ## Minimum-requirements checklist
 
-- ✅ **Integrates the DeepBook Predict contract on testnet** — `equinox_predict::vault` calls `predict::supply / mint / withdraw / redeem_permissionless` on the live package; deployed and linked.
+- ✅ **Integrates the DeepBook Predict contract on testnet** — `vortex_predict::vault` calls `predict::supply / mint / withdraw / redeem_permissionless` on the live package; deployed and linked.
 - ✅ **Works end-to-end** — deposit → signed supply/hedge legs → settle/redeem → withdraw, via the `/predict` UI and `scripts/keeper.mts`. Step-by-step test guide (both "use the live vault" and "publish your own") in **[DEMO.md](DEMO.md)**. Live funding needs testnet dUSDC from the form.
 - ✅ **Simulation result** — `SIMULATION.md` from real settled BTC history.
 
@@ -168,7 +168,7 @@ See **[DEMO.md](DEMO.md)** to test the entire flow.
 
 ## Prior work
 
-This repo also contains **Equinox Lending** (`contracts/equinox/`, plus the lending pages of
+This repo also contains **Vortex Lending** (`contracts/vortex/`, plus the lending pages of
 the interface) — an order-book multi-collateral lending protocol with a Nautilus-signed
 matcher. The Predict vault reuses its verifiable-signed-allocation pattern, tokenized share
 model, and Next.js shell.

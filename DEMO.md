@@ -1,4 +1,4 @@
-# Equinox PLP+Hedge Vault — End-to-End Test Guide
+# Vortex PLP+Hedge Vault — End-to-End Test Guide
 
 Two ways to exercise the flow. Path A needs nothing but a wallet; Path B gives you full
 control of your own vault.
@@ -7,9 +7,9 @@ All objects are on **Sui testnet**. dUSDC is **not** the normal testnet USDC —
 the DeepBook form: https://tally.so/r/Xx102L
 
 Live objects:
-- Vault package: `0xd4d556eea3435ff1f2a102b784ba1cc00a116c277513f73242409ad762a55e39`
-- PredictVault\<DUSDC\>: `0x14e0ef423ca0d50e0b47b0b225ad3fd510cc2ca2ce6cafc7d4bcabf25596c391`
-- PredictManager: `0x0de4ed88b9c7e7c2fe60b9cb064c45580884389f1cc800f31584366856aa1711`
+- Vault package: `0x185d97299f82a6380e99779eaed8a51833dada528c05b39e3f537eb01a266e83`
+- PredictVault\<DUSDC\>: `0xa45ebd4f8c87d7c3d1e4cfe20adb4de9594aa5439bb703685facc7bb7c1314f3`
+- PredictManager: `0xd38f54d9dbeba98121e81ab39fddd559e2b63577ceecf5404a1e63ad90c9b0fb`
 - Predict (live protocol): `0xc8736204d12f0a7277c86388a68bf8a194b0a14c5538ad13f22cbd8e2a38028a`
 
 The strategist signing key used by the deployed vault is a **throwaway testnet key**,
@@ -24,7 +24,7 @@ pubkey        = 88a1abc4e248b057731f309b0c7a847d916556f13113d2a71fef1d22330ba39a
 
 ## Path A — test against the live vault (UI, ~2 min)
 
-1. `cd equinox-interface && npm install && npm run dev`
+1. `cd vortex-interface && npm install && npm run dev`
 2. Open `http://localhost:3000/predict`, connect a testnet wallet.
 3. Request dUSDC (form above) to your wallet.
 4. **Deposit** dUSDC → you receive `VAULT_SHARE` (a transferable coin). The "Idle dUSDC" and
@@ -45,7 +45,7 @@ own keys means publishing your own instance (one-time):
 
 ```bash
 # 0. Prereqs: sui CLI on testnet, a wallet with SUI gas + dUSDC.
-cd contracts/equinox_predict
+cd contracts/vortex_predict
 sui move test                      # 5/5 pass (incl. on-chain ed25519 verify)
 
 # 1. Publish your instance (links to the live Predict package).
@@ -64,7 +64,7 @@ sui client call --package <PACKAGE_ID> --module vault --function set_manager \
   --type-args ...DUSDC --args <VAULT_ID> <MANAGER_ID> --gas-budget 100000000
 
 # 3. Point the keeper at your instance and run the whole cycle.
-cd ../../equinox-interface
+cd ../../vortex-interface
 #   set in .env.local: NEXT_PUBLIC_VAULT_PACKAGE_ID, NEXT_PUBLIC_VAULT_ID,
 #   NEXT_PUBLIC_VAULT_MANAGER_ID, DEPLOYER_MNEMONIC (keeper), STRATEGIST_SK
 npx tsx scripts/keeper.mts status
@@ -78,7 +78,7 @@ npx tsx scripts/keeper.mts redeem <oracleId> <expiryMs> <strikeScaled> 0 1   # a
 ## Simulation
 
 ```bash
-cd equinox-interface
+cd vortex-interface
 npx tsx scripts/simulate-plp-hedge.mts     # back-test on real settled BTC data -> ../SIMULATION.md
 ```
 

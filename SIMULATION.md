@@ -1,4 +1,4 @@
-# Equinox PLP+Hedge Vault — Strategy Simulation
+# Vortex PLP+Hedge Vault — Strategy Simulation
 
 Back-test over **2000 real settled BTC expiries** (most recent window) from the
 DeepBook Predict indexer. Avg expiry 24.4 min. Capital 100.000 dUSDC.
