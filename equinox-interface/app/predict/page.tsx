@@ -16,10 +16,14 @@ import {
   fetchActiveOracles,
   fetchSviLatest,
   fetchPricesLatest,
+  fetchVaultSummary,
+  fetchVaultPerformance,
+  computePlpApy,
   buildStrikeLadder,
   type OracleEntry,
   type SVISnapshot,
   type PriceSnapshot,
+  type VaultSummary,
 } from "@/lib/predict/server";
 import { computeSmile, type SmilePoint } from "@/lib/predict/svi";
 import { buildVaultDepositTx, buildVaultWithdrawTx } from "@/lib/predict/transactions";
@@ -31,6 +35,9 @@ interface VaultState {
   supplied: number;
   hedgeSpent: number;
 }
+
+// Modeled hedge carry as a fraction of PLP yield (from SIMULATION.md: 20% -> 12.75% APY).
+const HEDGE_CARRY = 0.36;
 
 function explorerTx(d: string) {
   return `https://suiscan.xyz/testnet/tx/${d}`;
@@ -49,6 +56,9 @@ export default function PredictPage() {
   const [selected, setSelected] = useState<OracleEntry | null>(null);
   const [svi, setSvi] = useState<SVISnapshot | null>(null);
   const [prices, setPrices] = useState<PriceSnapshot | null>(null);
+
+  const [summary, setSummary] = useState<VaultSummary | null>(null);
+  const [plpApy, setPlpApy] = useState(0);
 
   const [dusdcBalance, setDusdcBalance] = useState(0);
   const [shareBalance, setShareBalance] = useState(0);
@@ -98,6 +108,8 @@ export default function PredictPage() {
       setOracles(list);
       if (list.length > 0) setSelected(list[0]);
     });
+    fetchVaultSummary().then(setSummary);
+    fetchVaultPerformance("ALL").then((p) => setPlpApy(computePlpApy(p)));
     refreshVault();
   }, [refreshVault]);
 
@@ -245,7 +257,36 @@ export default function PredictPage() {
           </div>
         </section>
 
-        {/* Stat row */}
+        {/* Live yield band */}
+        <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Stat
+            icon={<Activity className="h-4 w-4 text-[hsl(var(--success))]" />}
+            label="Live PLP APY (protocol)"
+            value={`${(plpApy * 100).toFixed(2)}%`}
+          />
+          <Stat
+            icon={<ShieldCheck className="h-4 w-4 text-[hsl(var(--primary))]" />}
+            label="Net APY after hedge (est.)"
+            value={`${(plpApy * (1 - HEDGE_CARRY) * 100).toFixed(2)}%`}
+          />
+          <Stat
+            icon={<Layers className="h-4 w-4" />}
+            label="PLP share price"
+            value={summary ? summary.plp_share_price.toFixed(4) : "—"}
+          />
+          <Stat
+            icon={<TrendingDown className="h-4 w-4" />}
+            label="Vault utilization"
+            value={summary ? `${(summary.utilization * 100).toFixed(2)}%` : "—"}
+          />
+        </section>
+        <p className="-mt-3 text-xs text-[hsl(var(--muted-foreground))]">
+          Live PLP APY is annualized from the protocol&apos;s on-chain share-price series. Net APY
+          subtracts the modeled crash-hedge carry (~{(HEDGE_CARRY * 100).toFixed(0)}% of yield — see
+          SIMULATION.md); the hedge roughly halves left-tail drawdown.
+        </p>
+
+        {/* Vault stat row */}
         <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Stat icon={<Layers className="h-4 w-4" />} label="Idle dUSDC" value={vault ? vault.idle.toLocaleString() : "—"} />
           <Stat icon={<Activity className="h-4 w-4" />} label="PLP supplied (Σ)" value={vault ? vault.supplied.toLocaleString() : "—"} />

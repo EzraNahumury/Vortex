@@ -77,8 +77,51 @@ export async function fetchOracleState(oracleId: string): Promise<Record<string,
   return get(`/oracles/${oracleId}/state`);
 }
 
-export async function fetchVaultSummary(): Promise<Record<string, unknown> | null> {
-  return get(`/predicts/${predictConfig.predictObjectId}/vault/summary`);
+export interface VaultSummary {
+  vault_balance: number;
+  vault_value: number;
+  total_mtm: number;
+  total_max_payout: number;
+  available_liquidity: number;
+  available_withdrawal: number;
+  plp_total_supply: number;
+  plp_share_price: number;
+  utilization: number;
+  max_payout_utilization: number;
+  net_deposits: number;
+  total_supplied: number;
+  total_withdrawn: number;
+}
+
+export interface PerfPoint {
+  timestamp_ms: number;
+  share_price: number;
+  vault_value: number;
+  total_shares: number;
+}
+
+export async function fetchVaultSummary(): Promise<VaultSummary | null> {
+  return get<VaultSummary>(`/predicts/${predictConfig.predictObjectId}/vault/summary`);
+}
+
+export async function fetchVaultPerformance(range = "ALL"): Promise<PerfPoint[]> {
+  const r = await get<PerfPoint[]>(`/predicts/${predictConfig.predictObjectId}/vault/performance?range=${range}`);
+  return Array.isArray(r) ? r : [];
+}
+
+const MS_PER_YEAR = 31_536_000_000;
+
+/** Annualize the realized PLP yield from the share-price time series. */
+export function computePlpApy(perf: PerfPoint[]): number {
+  if (perf.length < 2) return 0;
+  const a = perf[0];
+  const b = perf[perf.length - 1];
+  const dt = b.timestamp_ms - a.timestamp_ms;
+  if (dt <= 0 || a.share_price <= 0) return 0;
+  const growth = b.share_price / a.share_price;
+  const years = dt / MS_PER_YEAR;
+  if (years <= 0) return 0;
+  return Math.pow(growth, 1 / years) - 1;
 }
 
 export async function fetchManagerPositions(managerId: string): Promise<Record<string, unknown> | null> {

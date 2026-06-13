@@ -49,10 +49,9 @@ cd contracts/equinox_predict
 sui move test                      # 5/5 pass (incl. on-chain ed25519 verify)
 
 # 1. Publish your instance (links to the live Predict package).
-#    The Predict branch ships an unpublished Move.lock, so set published-at on the cached dep:
-PREDICT=0xf5ea2b3749c65d6e56507cc35388719aadb28f9cab873696a2f8687f5c785138
-DEP=$(find ~/.move -path '*packages/predict/Move.toml' | head -1)
-#   ensure the dep has:  published-at = "$PREDICT"  and  [addresses] deepbook_predict = "$PREDICT"
+#    The Predict branch ships an unpublished Move.lock; this helper patches the cached dep
+#    with the deployed published-at so publish links instead of republishing:
+bash setup-dep.sh
 sui client publish --gas-budget 300000000 --allow-dirty
 #   -> note PACKAGE_ID and the created TreasuryCap<VAULT_SHARE>
 
