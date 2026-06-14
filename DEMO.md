@@ -25,15 +25,21 @@ pubkey        = 88a1abc4e248b057731f309b0c7a847d916556f13113d2a71fef1d22330ba39a
 ## Path A — test against the live vault (UI, ~2 min)
 
 1. `cd vortex-interface && npm install && npm run dev`
-2. Open `http://localhost:3000/predict`, connect a testnet wallet.
+2. Open `http://localhost:3000`, click **Connect Wallet** (testnet wallet) → you land on
+   `/predict`, already connected. Nav: **Predict · Activity · Redeem · Faucet**.
 3. Request dUSDC (form above) to your wallet.
-4. **Deposit** dUSDC → you receive `VAULT_SHARE` (a transferable coin). The "Idle dUSDC" and
-   "Vault shares" stats update.
+4. **Predict** — enter an amount and **Deposit** dUSDC → you receive `VAULT_SHARE` (a transferable
+   coin); the "Idle dUSDC" and "Vault shares" stats update. Browse the **live SVI vol smile** and
+   **strike ladder**, streamed from the public indexer.
 5. **Withdraw** burns shares for your proportional idle dUSDC.
-6. Browse the **live SVI vol smile** and **strike ladder** — streamed from the public indexer.
+6. **Activity** — every deposit / supply / hedge / unwind / redeem / withdraw, read live from
+   on-chain events, filterable, each row linking to Suiscan.
+7. **Redeem** — open hedge positions; once an oracle settles, redeem sweeps the payout back to the
+   vault (keeper-gated).
 
-Deposit and withdraw are permissionless. The supply/hedge legs on the shared vault are run by
-the maintainer keeper (Path B shows how they work).
+Every figure on these pages is read from the chain / indexer — no mock data. Deposit and withdraw
+are permissionless; the supply/hedge legs on the shared vault are run by the maintainer keeper
+(Path B shows how they work).
 
 ---
 
