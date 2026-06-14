@@ -63,6 +63,18 @@ function keeper(): Ed25519Keypair {
   return Ed25519Keypair.deriveKeypair(MNEMONIC);
 }
 
+/**
+ * Pick the soonest-expiring oracle that still has a comfortable live trading window.
+ * The indexer lists settled-but-unswept oracles as "active" with a past expiry, so blindly
+ * taking oracles[0] can hit `assert_live_oracle` (abort 4). Filter to a future expiry first.
+ */
+function pickLiveOracle<T extends { expiry: string | number }>(oracles: T[], minMinutes = 45): T | undefined {
+  const now = Date.now();
+  return oracles
+    .filter((o) => (Number(o.expiry) - now) / 60000 >= minMinutes)
+    .sort((a, b) => Number(a.expiry) - Number(b.expiry))[0];
+}
+
 async function readVault() {
   const obj = await client.getObject({ id: predictConfig.vaultId, options: { showContent: true } });
   const f = (obj.data?.content as { fields?: Record<string, string> })?.fields ?? {};
@@ -125,13 +137,13 @@ async function allocate(supplyDusdc: number, hedgeDusdc: number) {
     await exec(buildSupplyLegTx(supplyBase, nonce, sig), `supply ${fromQuoteBase(supplyBase)} dUSDC`);
   }
 
-  // --- hedge leg: deep OTM down binary on the nearest active oracle ---
+  // --- hedge leg: deep OTM down binary on the soonest *live* oracle ---
   const oracles = await fetchActiveOracles();
-  if (oracles.length === 0) {
-    console.log("no active oracles to hedge against");
+  const oracle = pickLiveOracle(oracles);
+  if (!oracle) {
+    console.log("no live oracle with a long-enough window to hedge");
     return;
   }
-  const oracle = oracles[0];
   const prices = await fetchPricesLatest(oracle.oracle_id);
   if (!prices) {
     console.log("no spot price for oracle; skipping hedge");
@@ -157,6 +169,49 @@ async function allocate(supplyDusdc: number, hedgeDusdc: number) {
   console.log(`hedge: ${oracle.underlying_asset} put @ $${fromPriceScaled(strike).toFixed(0)} (spot $${fromPriceScaled(spotScaled).toFixed(0)}), budget ${fromQuoteBase(budgetBase)} dUSDC`);
   await exec(
     buildHedgeLegTx({ oracleId: oracle.oracle_id, expiry: BigInt(oracle.expiry), strike: BigInt(strike), isUp: false, quantity, budgetBase: budgetBase, nonce, signature: sig }),
+    "hedge mint",
+  );
+}
+
+/** Mint a single OTM-down crash hedge on the soonest live oracle (no supply leg). */
+async function hedge(hedgeDusdc: number, otmPct = 2, qtyContracts = 0.5) {
+  const v = await readVault();
+  const oracles = await fetchActiveOracles();
+  const oracle = pickLiveOracle(oracles);
+  if (!oracle) {
+    console.log("no live oracle with a long-enough window to hedge");
+    return;
+  }
+  const prices = await fetchPricesLatest(oracle.oracle_id);
+  if (!prices) {
+    console.log("no spot price for oracle; skipping hedge");
+    return;
+  }
+  const spotScaled = prices.spot;
+  const tick = oracle.tick_size;
+  const strike = Math.floor((spotScaled * (1 - otmPct / 100)) / tick) * tick; // OTM down, snapped to tick
+  const budgetBase = hedgeDusdc > 0 ? toQuoteBase(hedgeDusdc) : (v.idle * BigInt(2)) / BigInt(100);
+  const quantity = toQuoteBase(qtyContracts);
+  const nonce = BigInt(Date.now());
+  const strat = strategistKeypair(STRATEGIST_SK);
+  const msg = buildHedgeMessage({
+    vaultId: predictConfig.vaultId,
+    nonce,
+    oracleId: oracle.oracle_id,
+    expiry: BigInt(oracle.expiry),
+    strike: BigInt(strike),
+    isUp: false,
+    quantity,
+    budget: budgetBase,
+  });
+  const sig = await signLeg(strat, msg);
+  const mins = Math.round((Number(oracle.expiry) - Date.now()) / 60000);
+  console.log(
+    `hedge: ${oracle.underlying_asset} put @ $${fromPriceScaled(strike).toFixed(0)} (spot $${fromPriceScaled(spotScaled).toFixed(0)}), budget ${fromQuoteBase(budgetBase)} dUSDC, expiry in ${mins}m`,
+  );
+  console.log(`  oracle: ${oracle.oracle_id}  expiry: ${oracle.expiry}  strike: ${strike}`);
+  await exec(
+    buildHedgeLegTx({ oracleId: oracle.oracle_id, expiry: BigInt(oracle.expiry), strike: BigInt(strike), isUp: false, quantity, budgetBase, nonce, signature: sig }),
     "hedge mint",
   );
 }
@@ -229,10 +284,11 @@ async function main() {
   if (cmd === "status") return status();
   if (cmd === "deposit") return deposit(Number(a[3] || 0));
   if (cmd === "allocate") return allocate(Number(a[3] || 0), Number(a[4] || 0));
+  if (cmd === "hedge") return hedge(Number(a[3] || 0), a[4] ? Number(a[4]) : 2, a[5] ? Number(a[5]) : 0.5);
   if (cmd === "unwind") return unwind(Number(a[3] || 0));
   if (cmd === "redeem") return redeem(a[3], a[4], a[5], a[6], a[7]);
   if (cmd === "demo") return demo(Number(a[3] || 0));
-  console.log("usage: keeper.mts [status | deposit <dUSDC> | allocate <supply> <hedge> | unwind [plp] | redeem <oracle> <expiry> <strike> <isUp> <qty> | demo <total>]");
+  console.log("usage: keeper.mts [status | deposit <dUSDC> | allocate <supply> <hedge> | hedge [budget] | unwind [plp] | redeem <oracle> <expiry> <strike> <isUp> <qty> | demo <total>]");
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

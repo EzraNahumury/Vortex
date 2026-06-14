@@ -86,12 +86,27 @@ npx tsx scripts/simulate-plp-hedge.mts     # back-test on real settled BTC data 
 
 ## Live run record
 
-> Filled after a funded run on the shared vault (deposit → supply leg → hedge leg → redeem).
-> Each is a testnet tx digest viewable at `https://suiscan.xyz/testnet/tx/<digest>`.
+Funded run on the shared vault, keeper `0x8c4551…`, epoch 1130 (2026-06-14). Each digest is
+viewable at `https://suiscan.xyz/testnet/tx/<digest>`. Final vault state confirms the flow:
+`total_shares 10.0 · supplied 8.0 · plp 7.983 · hedge_budget_spent 1.0 · idle 1.0` (dUSDC).
 
-| Step | Tx digest |
-| --- | --- |
-| deposit | _pending dUSDC funding_ |
-| supply leg | _pending_ |
-| hedge mint | _pending_ |
-| redeem (settled) | _pending_ |
+| Step | Tx digest | Status |
+| --- | --- | --- |
+| deposit — 10 dUSDC → 10 VAULT_SHARE | `26YYNBhK3qrupgxy88QmUUU6N1AAH8Y8BmTNMvQG4QPz` | ✅ success |
+| supply leg — 8 dUSDC → Predict PLP | `CCAVmHVDn8xEjHzwVJcaCZTdXvDagxvtkxQ9ujgrgDFT` | ✅ success |
+| hedge mint — BTC down-binary, 1 dUSDC budget | `E6Xdw51ZVRtAp9H4XnsX2ASxyHmsduGWnYB98JdQriRb` | ✅ success |
+| redeem (settled) | reproducible after expiry — see below | ⏳ pending settlement |
+
+> **Hedge strike note.** On testnet the Predict PLP only quotes mintable asks within ~±0.5% of
+> spot, so the demo hedge is a 0.5%-OTM BTC down-binary; `assert_mintable_ask` rejects deeper
+> strikes for lack of pool depth. The strategy targets deeper OTM where liquidity allows — the
+> on-chain mechanism (strategist-signed leg → `predict::mint` via the keeper-owned manager) is
+> identical at any strike.
+
+Redeem runs once oracle `0x66cad881da8fc165bf71915e644849c4a5c4e02022e3f393c22f7c0372f8fbfa`
+settles at its expiry (`1781418600000`):
+
+```bash
+npx tsx scripts/keeper.mts redeem \
+  0x66cad881da8fc165bf71915e644849c4a5c4e02022e3f393c22f7c0372f8fbfa 1781418600000 63960000000000 0 0.1
+```
