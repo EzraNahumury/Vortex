@@ -24,6 +24,8 @@ module vortex::vault {
     const EEmptyPlan: u64 = 3;
     const ENotShareHolder: u64 = 4;
     const EAllocationOverflow: u64 = 5;
+    /// A leg signature is being replayed (nonce not strictly greater than the last consumed).
+    const ENonceReplay: u64 = 6;
 
     // ============== STRUCTS ==============
 
@@ -36,6 +38,8 @@ module vortex::vault {
         shares: Table<address, u64>,
         // Sum of all amounts that have been routed out as lend orders.
         deployed: u64,
+        // Highest allocation-leg nonce consumed so far; each new leg must exceed it.
+        last_nonce: u64,
     }
 
     /// Receipt emitted after an allocation has been executed. Helps off-chain indexers
@@ -75,6 +79,7 @@ module vortex::vault {
             total_shares: 0,
             shares: table::new(ctx),
             deployed: 0,
+            last_nonce: 0,
         };
 
         event::emit(VaultCreated {
@@ -195,6 +200,11 @@ module vortex::vault {
         let market_id = object::id(market);
         let vault_id = object::id(vault);
         verify_leg(&vault_id, nonce, enclave, market_id, amount, rate_bps, duration_ms, &signature);
+
+        // Replay protection: each signed leg must carry a strictly increasing nonce, so a
+        // captured signature cannot be resubmitted to over-deploy the vault's idle balance.
+        assert!(nonce > vault.last_nonce, ENonceReplay);
+        vault.last_nonce = nonce;
 
         let payment_balance = balance::split(&mut vault.balance, amount);
         let payment = coin::from_balance(payment_balance, ctx);

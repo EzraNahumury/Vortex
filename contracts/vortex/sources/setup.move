@@ -20,7 +20,7 @@ module vortex::setup {
         let values = vector[
             b"Vortex Loan".to_string(),
             b"A lending position in the Vortex Protocol - Multi-collateral DeFi lending with DeepBook orderbook".to_string(),
-            b"https://raw.githubusercontent.com/yeheskieltame/Equinox/refs/heads/main/vortex-interface/public/logo/Equinox.png".to_string(),
+            b"https://raw.githubusercontent.com/EzraNahumury/Vortex/refs/heads/main/vortex-interface/public/logo/Vortex.png".to_string(),
             b"https://vortex-fi.vercel.app".to_string(),
         ];
         let mut display = display::new_with_fields<Loan<sui::sui::SUI, sui::sui::SUI>>(
@@ -39,7 +39,7 @@ module vortex::setup {
         let values_v = vector[
             b"Vortex Vested Position".to_string(),
             b"Locked tokens earning rewards - Use as collateral for priority lending".to_string(),
-            b"https://raw.githubusercontent.com/yeheskieltame/Equinox/refs/heads/main/vortex-interface/public/logo/Equinox.png".to_string(),
+            b"https://raw.githubusercontent.com/EzraNahumury/Vortex/refs/heads/main/vortex-interface/public/logo/Vortex.png".to_string(),
             b"https://vortex-fi.vercel.app".to_string(),
         ];
         let mut display_v = display::new_with_fields<VestingPosition>(

@@ -56,7 +56,7 @@ Network: **Sui Testnet**. Get testnet dUSDC via the DeepBook form: https://tally
    ┌──────────────────────────────────────────────────────────────┐
    │ execute_supply_leg   → predict::supply  → Balance<PLP> in vault │  (earn maker spread)
    │ execute_hedge_leg    → predict::mint    → OTM down binary       │  (crash insurance)
-   │ execute_withdraw_plp → predict::withdraw→ idle dUSDC            │  (unwind)
+   │ execute_withdraw_plp_leg → predict::withdraw → idle dUSDC       │  (unwind)
    │ execute_redeem_hedge → predict::redeem_permissionless          │  (settle payout → vault)
    └──────────────────────────────────────────────────────────────┘
 ```

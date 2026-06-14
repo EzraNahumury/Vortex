@@ -1,6 +1,6 @@
-# Equinox Protocol Smart Contracts
+# Vortex Protocol Smart Contracts (legacy lending)
 
-This directory contains the Move smart contracts for the Equinox Protocol, a multi-collateral lending platform on Sui with DeepBook integration.
+This directory contains the Move smart contracts for the Vortex lending protocol, a multi-collateral lending platform on Sui with DeepBook integration. This is prior work; the current Sui Overflow submission is the DeepBook Predict PLP+Hedge vault under `../vortex_predict`.
 
 ## Deployment Information (Testnet)
 
@@ -32,26 +32,24 @@ This directory contains the Move smart contracts for the Equinox Protocol, a mul
 
 ## Development
 
+Requires the [Sui CLI](https://docs.sui.io/references/cli).
+
 ### Build
 
-Use the provided Docker-based build script:
-
 ```bash
-./build.sh
+sui move build
 ```
 
 ### Test
 
-Run the comprehensive test suite:
-
 ```bash
-./test.sh
+sui move test
 ```
 
 ### Deploy
 
-Deploy to testnet (requires ~/.sui configuration):
+Publish to testnet (requires a funded active address; `sui client active-address`):
 
 ```bash
-./deploy.sh [gas_budget]
+sui client publish --gas-budget 200000000
 ```

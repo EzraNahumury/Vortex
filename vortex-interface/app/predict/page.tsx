@@ -410,7 +410,9 @@ export default function PredictPage() {
             </CardTitle>
             <CardDescription>
               The strategist signs a hedge leg buying deep-OTM down binaries; the vault verifies the
-              signature and mints via its keeper-owned PredictManager.
+              signature and mints via its keeper-owned PredictManager. Supply, hedge and unwind legs
+              are executed off-app by the strategist/keeper (<code>scripts/keeper.mts</code>), not
+              from this page — deposits and withdrawals are the only user-driven actions here.
             </CardDescription>
           </CardHeader>
           <CardContent>

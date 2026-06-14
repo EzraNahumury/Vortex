@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { executeRepay, executeLiquidate } from "@/lib/sui/transaction-executor";
+import { fetchUserCoins, getCoinType } from "@/lib/sui/blockchain-service";
 import { isMockMode } from "@/lib/config";
 
 export default function PositionsPage() {
@@ -36,9 +37,19 @@ export default function PositionsPage() {
     toast.loading("Processing repayment...");
 
     try {
-      // In a real app, we'd need the coin object ID for the payment
-      // For MVP/Mock, we'll assume the wallet handles coin selection or we use a placeholder
-      const coinObjectId = "0x...coin"; 
+      // Real mode needs a concrete coin object to pay the debt from; mock mode ignores it.
+      let coinObjectId = "0x...coin";
+      if (!isMockMode()) {
+        const coins = await fetchUserCoins(address, getCoinType(asset));
+        const top = [...coins].sort((a, b) => b.balance - a.balance)[0];
+        if (!top) {
+          toast.dismiss();
+          toast.error(`No ${asset} balance to repay with`);
+          setProcessingId(null);
+          return;
+        }
+        coinObjectId = top.objectId;
+      }
 
       const result = await executeRepay(positionId, coinObjectId, asset, address);
 
@@ -65,8 +76,19 @@ export default function PositionsPage() {
     toast.loading("Processing liquidation...");
 
     try {
-      // For liquidation, we also need to pay the debt to seize collateral
-      const coinObjectId = "0x...coin";
+      // For liquidation, we also need to pay the debt to seize collateral.
+      let coinObjectId = "0x...coin";
+      if (!isMockMode()) {
+        const coins = await fetchUserCoins(address, getCoinType(asset));
+        const top = [...coins].sort((a, b) => b.balance - a.balance)[0];
+        if (!top) {
+          toast.dismiss();
+          toast.error(`No ${asset} balance to liquidate with`);
+          setProcessingId(null);
+          return;
+        }
+        coinObjectId = top.objectId;
+      }
 
       const result = await executeLiquidate(positionId, coinObjectId, asset, address);
 

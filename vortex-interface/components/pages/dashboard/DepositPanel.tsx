@@ -11,6 +11,7 @@ import Image from "next/image";
 import { fetchUserCoins, getCoinType } from "@/lib/sui/blockchain-service";
 import { toast } from "sonner";
 import { executeCreateOrder } from "@/lib/sui/transaction-executor";
+import { isMockMode } from "@/lib/config";
 
 interface DepositPanelProps {
   asset: string;
@@ -25,6 +26,7 @@ export function DepositPanel({ asset, apy }: DepositPanelProps) {
   const [interestRate, setInterestRate] = useState(apy.toString());
   const [duration, setDuration] = useState("30");
   const [userBalance, setUserBalance] = useState(0);
+  const [coins, setCoins] = useState<{ objectId: string; balance: number }[]>([]);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
   const [isDepositing, setIsDepositing] = useState(false);
 
@@ -32,13 +34,15 @@ export function DepositPanel({ asset, apy }: DepositPanelProps) {
   useEffect(() => {
     if (isConnected && address) {
       setIsLoadingBalance(true);
-      fetchUserCoins(address, getCoinType(asset)).then((coins) => {
-        const total = coins.reduce((acc, coin) => acc + coin.balance, 0);
+      fetchUserCoins(address, getCoinType(asset)).then((fetched) => {
+        setCoins(fetched);
+        const total = fetched.reduce((acc, coin) => acc + coin.balance, 0);
         setUserBalance(total);
         setIsLoadingBalance(false);
       });
     } else {
       setUserBalance(0);
+      setCoins([]);
     }
   }, [isConnected, address, asset]);
 
@@ -82,6 +86,20 @@ export function DepositPanel({ asset, apy }: DepositPanelProps) {
     toast.loading("Creating lending position...");
 
     try {
+      // Real mode needs a concrete coin object to split the lend amount from.
+      // Mirror the orderbook/predict pattern: use the largest coin, split exact inside the tx.
+      let coinObjectId = "0x...coin";
+      if (!isMockMode()) {
+        const top = [...coins].sort((a, b) => b.balance - a.balance)[0];
+        if (!top) {
+          toast.dismiss();
+          toast.error(`No ${asset} coins found in wallet`);
+          setIsDepositing(false);
+          return;
+        }
+        coinObjectId = top.objectId;
+      }
+
       const result = await executeCreateOrder({
         type: "lend",
         asset: asset,
@@ -90,7 +108,7 @@ export function DepositPanel({ asset, apy }: DepositPanelProps) {
         ltv: 75, // Default safe LTV preference
         term: days,
         isHidden: false, // Default public for dashboard quick action
-        coinObjectId: "0x...coin", 
+        coinObjectId,
         collateralAmount: 0 // Not needed for lend
       }, address);
 
@@ -115,8 +133,9 @@ export function DepositPanel({ asset, apy }: DepositPanelProps) {
         
         setDepositAmount("");
         // Refresh balance
-        fetchUserCoins(address, getCoinType(asset)).then((coins) => {
-            const total = coins.reduce((acc, coin) => acc + coin.balance, 0);
+        fetchUserCoins(address, getCoinType(asset)).then((fetched) => {
+            setCoins(fetched);
+            const total = fetched.reduce((acc, coin) => acc + coin.balance, 0);
             setUserBalance(total);
         });
 

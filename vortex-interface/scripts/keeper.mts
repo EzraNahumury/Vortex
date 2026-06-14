@@ -8,8 +8,11 @@
  *
  * Commands:
  *   npx tsx scripts/keeper.mts status
+ *   npx tsx scripts/keeper.mts deposit <dUSDC>
  *   npx tsx scripts/keeper.mts allocate [supplyDusdc] [hedgeBudgetDusdc]
- *   npx tsx scripts/keeper.mts redeem
+ *   npx tsx scripts/keeper.mts unwind [plpAmount]
+ *   npx tsx scripts/keeper.mts redeem <oracleId> <expiryMs> <strikeScaled> <isUp> <qty>
+ *   npx tsx scripts/keeper.mts demo [totalDusdc]
  *
  * Env (.env.local or process env):
  *   DEPLOYER_MNEMONIC   — keeper wallet (must own the PredictManager); falls back to active CLI key is NOT supported here
@@ -21,8 +24,8 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { SuiJsonRpcClient, getJsonRpcFullnodeUrl } from "@mysten/sui/jsonRpc";
 
 import { predictConfig, toQuoteBase, fromQuoteBase, fromPriceScaled } from "../lib/predict/config";
-import { buildSupplyLegTx, buildHedgeLegTx, buildRedeemHedgeTx, buildVaultDepositTx } from "../lib/predict/transactions";
-import { buildSupplyMessage, buildHedgeMessage, strategistKeypair, signLeg } from "../lib/predict/strategist";
+import { buildSupplyLegTx, buildHedgeLegTx, buildWithdrawPlpLegTx, buildRedeemHedgeTx, buildVaultDepositTx } from "../lib/predict/transactions";
+import { buildSupplyMessage, buildHedgeMessage, buildWithdrawPlpMessage, strategistKeypair, signLeg } from "../lib/predict/strategist";
 import { fetchActiveOracles, fetchPricesLatest } from "../lib/predict/server";
 
 function loadEnv(): Record<string, string> {
@@ -175,6 +178,22 @@ async function deposit(amountDusdc: number) {
   await exec(tx, `deposit ${amountDusdc} dUSDC -> vault (mints VAULT_SHARE)`);
 }
 
+/** Strategist-signed: unwind PLP back to idle dUSDC. Pass 0 to unwind the full PLP balance. */
+async function unwind(plpDusdc: number) {
+  const v = await readVault();
+  if (v.plp === BigInt(0)) {
+    console.log("unwind: vault holds no PLP");
+    return false;
+  }
+  const want = plpDusdc > 0 ? toQuoteBase(plpDusdc) : v.plp;
+  const amount = want > v.plp ? v.plp : want;
+  const strat = strategistKeypair(STRATEGIST_SK);
+  const nonce = BigInt(Date.now());
+  const msg = buildWithdrawPlpMessage(predictConfig.vaultId, nonce, amount);
+  const sig = await signLeg(strat, msg);
+  return exec(buildWithdrawPlpLegTx(amount, nonce, sig), `unwind ${amount.toString()} PLP -> idle`);
+}
+
 async function redeem(oracleId: string, expiry: string, strike: string, isUp: string, qtyDusdc: string) {
   if (!oracleId || !expiry || !strike) {
     console.error("usage: keeper.mts redeem <oracleId> <expiryMs> <strikeScaled> <isUp 0|1> <quantityDusdc>");
@@ -189,6 +208,8 @@ async function redeem(oracleId: string, expiry: string, strike: string, isUp: st
     quantity: toQuoteBase(Number(qtyDusdc || 1)),
   });
   await exec(tx, `redeem hedge on ${oracleId.slice(0, 10)}`);
+  // Unwind PLP back to idle so settled capital is claimable by depositors (trustless withdraw).
+  await unwind(0);
 }
 
 async function demo(totalDusdc: number) {
@@ -208,9 +229,10 @@ async function main() {
   if (cmd === "status") return status();
   if (cmd === "deposit") return deposit(Number(a[3] || 0));
   if (cmd === "allocate") return allocate(Number(a[3] || 0), Number(a[4] || 0));
+  if (cmd === "unwind") return unwind(Number(a[3] || 0));
   if (cmd === "redeem") return redeem(a[3], a[4], a[5], a[6], a[7]);
   if (cmd === "demo") return demo(Number(a[3] || 0));
-  console.log("usage: keeper.mts [status | deposit <dUSDC> | allocate <supply> <hedge> | redeem <oracle> <expiry> <strike> <isUp> <qty> | demo <total>]");
+  console.log("usage: keeper.mts [status | deposit <dUSDC> | allocate <supply> <hedge> | unwind [plp] | redeem <oracle> <expiry> <strike> <isUp> <qty> | demo <total>]");
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

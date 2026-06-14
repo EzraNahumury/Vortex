@@ -270,7 +270,10 @@ export async function signAllocationPlan(
   request: AllocationPlanRequest,
 ): Promise<SignedAllocationLeg[]> {
   const enclave = getEnclave();
-  const nonce = Date.now();
+  // Per-leg strictly increasing nonce: the on-chain vault enforces nonce > last_nonce for
+  // replay protection, so legs within one plan must each carry a distinct, increasing nonce
+  // (they are submitted by the keeper in array order).
+  const baseNonce = Date.now();
   const totalWeight = request.legs.reduce((acc, leg) => acc + leg.weight, 0);
   if (totalWeight <= 0) throw new Error("Allocation plan has zero total weight");
 
@@ -278,6 +281,7 @@ export async function signAllocationPlan(
   let allocated = 0;
   for (let i = 0; i < request.legs.length; i++) {
     const leg = request.legs[i];
+    const nonce = baseNonce + i;
     // Last leg absorbs rounding so the sum exactly equals request.amount.
     const isLast = i === request.legs.length - 1;
     const legAmount = isLast
