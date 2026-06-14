@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Navbar } from "@/components/shared";
+import { Navbar, AppBackground } from "@/components/shared";
 import { VestingDepositForm, VestingPositionsTable } from "@/components/pages/vesting";
 import { useAppStore } from "@/lib/store";
 import { useWallet } from "@/components/providers";
@@ -148,109 +148,106 @@ export default function VestingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))]">
+    <div className="relative min-h-screen overflow-x-clip bg-[hsl(var(--background))] font-display">
+      <AppBackground />
       <Navbar />
 
-      <div className="absolute top-0 left-0 right-0 h-[400px] bg-[radial-gradient(ellipse_at_top,_hsla(220,50%,20%,0.3)_0%,_transparent_70%)] pointer-events-none" />
+      <main className="relative z-10 pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        {/* ============================ HEADER ============================ */}
+        <div className="mb-10">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))] bg-white/[0.03] px-3.5 py-1.5 text-xs tracking-wide">
+            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary))]" />
+            <span className="lp-muted uppercase">Vesting Vault · Lock to earn</span>
+          </div>
+          <h1 className="text-[clamp(34px,5vw,56px)] font-bold leading-[1.02] text-[hsl(var(--foreground))]">
+            Lock your SUI. <span className="text-[hsl(var(--primary))]">Earn subsidy yield.</span>
+          </h1>
+          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[hsl(var(--muted-foreground))]">
+            Lock your vested SUI tokens to earn subsidy yield and get priority in order matching.
+            Longer lock durations earn higher APY rewards.
+          </p>
 
-      <main className="relative pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Header */}
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-4xl font-semibold text-[hsl(var(--foreground))]">Vesting</h1>
-                <span className="text-4xl font-semibold text-[hsl(var(--muted-foreground))]">Vault</span>
-              </div>
+          {/* feature chips */}
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--secondary))] px-3 py-1 text-xs text-[hsl(var(--foreground))]">
+              <Lock className="h-3.5 w-3.5 text-[hsl(var(--primary))]" />
+              Lock to Earn
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--secondary))] px-3 py-1 text-xs text-[hsl(var(--foreground))]">
+              <Shield className="h-3.5 w-3.5 text-[hsl(var(--success))]" />
+              Priority Matching
+            </span>
+          </div>
 
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--secondary))]">
-                  <Lock className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                  <span className="text-xs text-[hsl(var(--foreground))]">Lock to Earn</span>
-                </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--secondary))]">
-                  <Shield className="w-3.5 h-3.5 text-[hsl(var(--success))]" />
-                  <span className="text-xs text-[hsl(var(--foreground))]">Priority Matching</span>
-                </div>
-              </div>
+          {lastTxDigest && (
+            <a
+              href={`https://suiscan.xyz/testnet/tx/${lastTxDigest}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-1 text-sm text-[hsl(var(--primary))] hover:underline"
+            >
+              Last transaction: {lastTxDigest.slice(0, 16)}... <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
 
-              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-8 max-w-2xl">
-                Lock your vested SUI tokens to earn subsidy yield and get priority in order matching. 
-                Longer lock durations earn higher APY rewards.
-              </p>
-
-              {lastTxDigest && (
-                <a
-                  href={`https://suiscan.xyz/testnet/tx/${lastTxDigest}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1 mb-4"
-                >
-                  Last transaction: {lastTxDigest.slice(0, 16)}... <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-
-            {/* Stats Row - Dashboard Style */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-6 border-b border-[hsl(var(--border))]">
-              <div>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">Total Locked</p>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* ============================ MAIN COLUMN ============================ */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-5 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+                <p className="mb-2 text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Total Locked</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-semibold text-[hsl(var(--foreground))]">
+                  <span className="text-2xl font-bold text-[hsl(var(--foreground))]">
                     {formatNumber(totalLocked)}
                   </span>
-                  <span className="text-lg text-[hsl(var(--primary))]">SUI</span>
+                  <span className="text-sm font-medium text-[hsl(var(--primary))]">SUI</span>
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">Total Earned</p>
+              <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-5 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+                <p className="mb-2 text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Total Earned</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-semibold text-[hsl(var(--accent))]">
+                  <span className="text-2xl font-bold text-[hsl(var(--success))]">
                     +{formatNumber(totalEarned)}
                   </span>
-                  <span className="text-lg text-[hsl(var(--accent))]">SUI</span>
+                  <span className="text-sm font-medium text-[hsl(var(--success))]">SUI</span>
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">Priority Status</p>
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-semibold ${hasActiveLock ? "text-[hsl(var(--success))]" : "text-[hsl(var(--muted-foreground))]"}`}>
+              <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-5 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+                <p className="mb-2 text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Priority Status</p>
+                <div className="flex items-center gap-2">
+                  {hasActiveLock && <span className="h-2 w-2 rounded-full bg-[hsl(var(--success))] shadow-[0_0_8px_hsl(var(--success))]" />}
+                  <span className={`text-2xl font-bold ${hasActiveLock ? "text-[hsl(var(--success))]" : "text-[hsl(var(--muted-foreground))]"}`}>
                     {hasActiveLock ? "Active" : "Inactive"}
                   </span>
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">Active Locks</p>
+              <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-5 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+                <p className="mb-2 text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Active Locks</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-semibold text-[hsl(var(--foreground))]">
+                  <span className="text-2xl font-bold text-[hsl(var(--foreground))]">
                     {activePositions.filter((p) => p.status === "locked").length}
                   </span>
-                  <span className="text-lg text-[hsl(var(--muted-foreground))]">positions</span>
+                  <span className="text-sm font-medium text-[hsl(var(--muted-foreground))]">positions</span>
                 </div>
               </div>
             </div>
 
             {/* Tabs with Positions Table */}
             <Tabs defaultValue="positions" className="w-full">
-              <TabsList className="bg-transparent border-b border-[hsl(var(--border))] rounded-none p-0 h-auto">
-                <TabsTrigger
-                  value="positions"
-                  className="cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--foreground))] data-[state=active]:bg-transparent px-4 py-3 text-sm"
-                >
+              <TabsList className="mb-6 rounded-full border border-[hsl(var(--border))] bg-white/[0.02] p-1">
+                <TabsTrigger value="positions" className="cursor-pointer rounded-full">
                   Active Positions
                 </TabsTrigger>
-                <TabsTrigger
-                  value="history"
-                  className="cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--foreground))] data-[state=active]:bg-transparent px-4 py-3 text-sm"
-                >
+                <TabsTrigger value="history" className="cursor-pointer rounded-full">
                   History
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="positions" className="mt-6">
+              <TabsContent value="positions">
                 {isLoadingVesting ? (
-                  <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-12 flex items-center justify-center">
+                  <div className="flex items-center justify-center rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-14 backdrop-blur-xl">
                     <div className="animate-pulse text-[hsl(var(--muted-foreground))]">Loading positions...</div>
                   </div>
                 ) : (
@@ -264,7 +261,7 @@ export default function VestingPage() {
                 )}
               </TabsContent>
 
-              <TabsContent value="history" className="mt-6">
+              <TabsContent value="history">
                 <VestingPositionsTable
                   positions={unlockedPositions}
                   title="Unlock History"
@@ -274,42 +271,44 @@ export default function VestingPage() {
             </Tabs>
           </div>
 
-          {/* Sidebar - Deposit Panel */}
-          <div className="lg:sticky lg:top-20 lg:self-start space-y-4">
+          {/* ============================ SIDEBAR ============================ */}
+          <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             <VestingDepositForm onSubmit={handleDeposit} isSubmitting={isSubmitting} />
 
             {/* Benefits Card */}
-            <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-5">
-              <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-4">Vault Benefits</h4>
+            <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-6 backdrop-blur-xl">
+              <h4 className="mb-5 text-sm font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
+                Vault Benefits
+              </h4>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[hsl(var(--accent))]/20 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4 text-[hsl(var(--accent))]" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--primary))]/10">
+                    <Sparkles className="h-4 w-4 text-[hsl(var(--primary))]" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">Subsidy Yield</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--foreground))]">Subsidy Yield</p>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
                       Earn up to 3.5% extra APY on locked tokens
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[hsl(var(--success))]/20 flex items-center justify-center shrink-0">
-                    <Shield className="w-4 h-4 text-[hsl(var(--success))]" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--success))]/10">
+                    <Shield className="h-4 w-4 text-[hsl(var(--success))]" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">Priority Matching</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--foreground))]">Priority Matching</p>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
                       Get matched first with better rates
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-[hsl(var(--primary))]/20 flex items-center justify-center shrink-0">
-                    <Lock className="w-4 h-4 text-[hsl(var(--primary))]" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--primary))]/10">
+                    <Lock className="h-4 w-4 text-[hsl(var(--primary))]" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[hsl(var(--foreground))]">Ecosystem Stability</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--foreground))]">Ecosystem Stability</p>
                     <p className="text-xs text-[hsl(var(--muted-foreground))]">
                       Reduce sell pressure on SUI
                     </p>

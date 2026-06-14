@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Navbar } from "@/components/shared";
+import { Navbar, AppBackground } from "@/components/shared";
 import { CreateOrderForm, OrderbookTable, OrdersTable } from "@/components/pages/orderbook";
 import { useAppStore } from "@/lib/store";
 import { useWallet } from "@/components/providers";
@@ -24,7 +24,7 @@ import { formatNumber } from "@/lib/utils/format";
 import { pickBestMatch, type MatchCandidate } from "@/lib/matching/ranker";
 
 export default function OrderbookPage() {
-  const { orders, user, isLoadingOrders, fetchOrders, addOrder, vestingPositions } = useAppStore();
+  const { orders, isLoadingOrders, fetchOrders, addOrder, cancelOrder, vestingPositions } = useAppStore();
   const { address, isConnected } = useWallet();
 
   const [orderType, setOrderType] = useState<"lend" | "borrow">("lend");
@@ -41,7 +41,11 @@ export default function OrderbookPage() {
 
   const lendOrders = orders.filter((o) => o.type === "lend");
   const borrowOrders = orders.filter((o) => o.type === "borrow");
-  const userOrders = orders.filter((o) => o.status === "pending" || o.status === "matched");
+
+  const handleCancelOrder = (orderId: string) => {
+    cancelOrder(orderId);
+    toast.success("Order cancelled");
+  };
 
   // Calculate market stats
   const totalLendVolume = lendOrders.reduce((acc, o) => acc + o.amount, 0);
@@ -239,27 +243,31 @@ export default function OrderbookPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))]">
+    <div className="relative min-h-screen bg-[hsl(var(--background))] overflow-x-clip">
+      <AppBackground />
       <Navbar />
 
-      <div className="absolute top-0 left-0 right-0 h-[400px] bg-[radial-gradient(ellipse_at_top,_hsla(220,50%,20%,0.3)_0%,_transparent_70%)] pointer-events-none" />
-
-      <main className="relative pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <main className="relative z-10 pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="space-y-6 mb-8">
+        <div className="space-y-8 mb-10">
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-4xl font-semibold text-[hsl(var(--foreground))]">Order</h1>
-                <span className="text-4xl font-semibold text-[hsl(var(--muted-foreground))]">Book</span>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-6">
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))] bg-white/[0.03] px-3.5 py-1.5 text-xs tracking-wide">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary))]" />
+                  <span className="text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Central Limit Order Book</span>
+                </div>
+                <h1 className="font-display text-[clamp(36px,6vw,60px)] font-bold leading-[0.98]">
+                  Order<span className="text-[hsl(var(--primary))]">book</span>
+                </h1>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 {address && (
                   <Button
                     variant="outline"
                     onClick={handleFindMatch}
                     disabled={isMatching}
-                    className="cursor-pointer border-[hsl(var(--primary))/20] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))/10]"
+                    className="cursor-pointer rounded-full border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary)/0.08)] text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary)/0.15)]"
                   >
                     <Zap className={`w-4 h-4 mr-2 ${isMatching ? 'animate-spin' : ''}`} />
                     {isMatching ? "Matching..." : "Auto-Match"}
@@ -267,30 +275,30 @@ export default function OrderbookPage() {
                 )}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="cursor-pointer bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary))]/90">
+                  <Button className="cursor-pointer rounded-full bg-[hsl(var(--primary))] px-5 font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110">
                     <Plus className="w-4 h-4 mr-2" />
                     New Order
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px] bg-[hsl(var(--card))] border-[hsl(var(--border))]">
+                <DialogContent className="sm:max-w-[500px] rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/90 backdrop-blur-xl">
                   <DialogHeader>
                     <DialogTitle className="text-[hsl(var(--foreground))]">Create New Order</DialogTitle>
                   </DialogHeader>
                   <Tabs value={orderType} onValueChange={(v) => setOrderType(v as "lend" | "borrow")}>
-                    <TabsList className="mb-4 w-full bg-[hsl(var(--secondary))]">
-                      <TabsTrigger value="lend" className="flex-1 cursor-pointer">Lend</TabsTrigger>
-                      <TabsTrigger value="borrow" className="flex-1 cursor-pointer">Borrow</TabsTrigger>
+                    <TabsList className="mb-4 w-full rounded-full bg-[hsl(var(--secondary))] p-1">
+                      <TabsTrigger value="lend" className="flex-1 cursor-pointer rounded-full">Lend</TabsTrigger>
+                      <TabsTrigger value="borrow" className="flex-1 cursor-pointer rounded-full">Borrow</TabsTrigger>
                     </TabsList>
                     <TabsContent value="lend">
-                      <CreateOrderForm 
-                        type="lend" 
-                        onSubmit={handleOrderSubmit} 
+                      <CreateOrderForm
+                        type="lend"
+                        onSubmit={handleOrderSubmit}
                         isSubmitting={isSubmitting}
                       />
                     </TabsContent>
                     <TabsContent value="borrow">
-                      <CreateOrderForm 
-                        type="borrow" 
+                      <CreateOrderForm
+                        type="borrow"
                         onSubmit={handleOrderSubmit}
                         isSubmitting={isSubmitting}
                       />
@@ -301,23 +309,23 @@ export default function OrderbookPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--secondary))]">
+            <div className="flex flex-wrap items-center gap-2.5 mb-5">
+              <div className="flex items-center gap-1.5 rounded-full border border-[hsl(var(--border))] bg-white/[0.02] px-3 py-1.5 text-xs">
                 <EyeOff className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                <span className="text-xs text-[hsl(var(--foreground))]">ZK Hidden Orders</span>
+                <span className="text-[hsl(var(--foreground))]">ZK Hidden Orders</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--secondary))]">
+              <div className="flex items-center gap-1.5 rounded-full border border-[hsl(var(--border))] bg-white/[0.02] px-3 py-1.5 text-xs">
                 <Shield className="w-3.5 h-3.5 text-[hsl(var(--success))]" />
-                <span className="text-xs text-[hsl(var(--foreground))]">AI Fair Matching</span>
+                <span className="text-[hsl(var(--foreground))]">AI Fair Matching</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--secondary))]">
+              <div className="flex items-center gap-1.5 rounded-full border border-[hsl(var(--border))] bg-white/[0.02] px-3 py-1.5 text-xs">
                 <Zap className="w-3.5 h-3.5 text-[hsl(var(--warning))]" />
-                <span className="text-xs text-[hsl(var(--foreground))]">~400ms Finality</span>
+                <span className="text-[hsl(var(--foreground))]">~400ms Finality</span>
               </div>
             </div>
 
-            <p className="text-sm text-[hsl(var(--muted-foreground))] max-w-2xl">
-              Central limit order book for DeFi lending. Place custom orders with ZK privacy protection, 
+            <p className="text-sm leading-relaxed text-[hsl(var(--muted-foreground))] max-w-2xl">
+              Central limit order book for DeFi lending. Place custom orders with ZK privacy protection,
               get AI-verified fair matching via Nautilus, and experience fast finality on Sui.
             </p>
 
@@ -326,7 +334,7 @@ export default function OrderbookPage() {
                 href={isMockMode() ? "#" : `https://suiscan.xyz/testnet/tx/${lastTxDigest}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1 mt-2"
+                className="text-sm text-[hsl(var(--primary))] hover:underline flex items-center gap-1 mt-3"
               >
                 Last transaction: {lastTxDigest.slice(0, 16)}... <ExternalLink className="w-3 h-3" />
               </a>
@@ -334,43 +342,43 @@ export default function OrderbookPage() {
           </div>
 
           {/* Market Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-6 border-b border-[hsl(var(--border))]">
-            <div>
-              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">Bid Volume</p>
-              <div className="flex items-baseline gap-1">
-                <TrendingUp className="w-4 h-4 text-[hsl(var(--success))] mr-1" />
-                <span className="text-2xl font-semibold text-[hsl(var(--foreground))]">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+              <p className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">Bid Volume</p>
+              <div className="flex items-baseline gap-1.5">
+                <TrendingUp className="w-4 h-4 text-[hsl(var(--success))] self-center" />
+                <span className="text-2xl font-bold text-[hsl(var(--foreground))]">
                   ${formatNumber(totalLendVolume)}
                 </span>
               </div>
-              <span className="text-xs text-[hsl(var(--muted-foreground))]">{lendOrders.length} orders</span>
+              <span className="mt-1 block text-xs text-[hsl(var(--muted-foreground))]">{lendOrders.length} orders</span>
             </div>
-            <div>
-              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">Ask Volume</p>
-              <div className="flex items-baseline gap-1">
-                <TrendingDown className="w-4 h-4 text-[hsl(var(--destructive))] mr-1" />
-                <span className="text-2xl font-semibold text-[hsl(var(--foreground))]">
+            <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+              <p className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">Ask Volume</p>
+              <div className="flex items-baseline gap-1.5">
+                <TrendingDown className="w-4 h-4 text-[hsl(var(--destructive))] self-center" />
+                <span className="text-2xl font-bold text-[hsl(var(--foreground))]">
                   ${formatNumber(totalBorrowVolume)}
                 </span>
               </div>
-              <span className="text-xs text-[hsl(var(--muted-foreground))]">{borrowOrders.length} orders</span>
+              <span className="mt-1 block text-xs text-[hsl(var(--muted-foreground))]">{borrowOrders.length} orders</span>
             </div>
-            <div>
-              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">Avg Lend Rate</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-semibold text-[hsl(var(--success))]">
+            <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+              <p className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">Avg Lend Rate</p>
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-2xl font-bold text-[hsl(var(--success))]">
                   {avgLendRate.toFixed(2)}
                 </span>
-                <span className="text-lg text-[hsl(var(--success))]">%</span>
+                <span className="text-lg font-semibold text-[hsl(var(--success))]">%</span>
               </div>
             </div>
-            <div>
-              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">Avg Borrow Rate</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-semibold text-[hsl(var(--warning))]">
+            <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+              <p className="text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">Avg Borrow Rate</p>
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-2xl font-bold text-[hsl(var(--warning))]">
                   {avgBorrowRate.toFixed(2)}
                 </span>
-                <span className="text-lg text-[hsl(var(--warning))]">%</span>
+                <span className="text-lg font-semibold text-[hsl(var(--warning))]">%</span>
               </div>
             </div>
           </div>
@@ -387,22 +395,22 @@ export default function OrderbookPage() {
 
         {/* User Orders with Tabs */}
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="bg-transparent border-b border-[hsl(var(--border))] rounded-none p-0 h-auto mb-6">
+          <TabsList className="bg-transparent border-b border-[hsl(var(--border))] rounded-none p-0 h-auto mb-6 gap-1">
             <TabsTrigger
               value="all"
-              className="cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--foreground))] data-[state=active]:bg-transparent px-4 py-3 text-sm"
+              className="cursor-pointer rounded-none border-b-2 border-transparent text-[hsl(var(--muted-foreground))] data-[state=active]:border-[hsl(var(--primary))] data-[state=active]:text-[hsl(var(--foreground))] data-[state=active]:bg-transparent px-4 py-3 text-sm font-medium"
             >
               All Orders
             </TabsTrigger>
             <TabsTrigger
               value="lend"
-              className="cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--foreground))] data-[state=active]:bg-transparent px-4 py-3 text-sm"
+              className="cursor-pointer rounded-none border-b-2 border-transparent text-[hsl(var(--muted-foreground))] data-[state=active]:border-[hsl(var(--primary))] data-[state=active]:text-[hsl(var(--foreground))] data-[state=active]:bg-transparent px-4 py-3 text-sm font-medium"
             >
               Lend Orders
             </TabsTrigger>
             <TabsTrigger
               value="borrow"
-              className="cursor-pointer rounded-none border-b-2 border-transparent data-[state=active]:border-[hsl(var(--foreground))] data-[state=active]:bg-transparent px-4 py-3 text-sm"
+              className="cursor-pointer rounded-none border-b-2 border-transparent text-[hsl(var(--muted-foreground))] data-[state=active]:border-[hsl(var(--primary))] data-[state=active]:text-[hsl(var(--foreground))] data-[state=active]:bg-transparent px-4 py-3 text-sm font-medium"
             >
               Borrow Orders
             </TabsTrigger>
@@ -413,6 +421,7 @@ export default function OrderbookPage() {
               orders={orders}
               title="All Orders"
               emptyMessage="No orders yet. Create your first order to start lending or borrowing."
+              onCancel={handleCancelOrder}
             />
           </TabsContent>
 
@@ -421,6 +430,7 @@ export default function OrderbookPage() {
               orders={lendOrders}
               title="Lend Orders"
               emptyMessage="No lend orders yet"
+              onCancel={handleCancelOrder}
             />
           </TabsContent>
 
@@ -429,85 +439,95 @@ export default function OrderbookPage() {
               orders={borrowOrders}
               title="Borrow Orders"
               emptyMessage="No borrow orders yet"
+              onCancel={handleCancelOrder}
             />
           </TabsContent>
         </Tabs>
 
-        {/* How It Works Section - Cleaned up */}
-        <div className="mt-12 p-6 bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))]">
-          <h3 className="text-base font-medium text-[hsl(var(--foreground))] mb-6">How DeepBook-Style Matching Works</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))]/20 flex items-center justify-center shrink-0">
-                <EyeOff className="w-5 h-5 text-[hsl(var(--primary))]" />
+        {/* How It Works Section */}
+        <div className="mt-14 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-6 sm:p-8">
+          <div className="mb-7 flex items-center gap-3">
+            <span className="text-xs font-semibold text-[hsl(var(--primary))]">HOW IT WORKS</span>
+            <span className="h-px flex-1 bg-[hsl(var(--border))]" />
+          </div>
+          <h3 className="font-display text-2xl font-bold text-[hsl(var(--foreground))] mb-8">
+            DeepBook-style <span className="text-[hsl(var(--primary))]">matching.</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="group rounded-2xl border border-[hsl(var(--border))] bg-white/[0.02] p-5 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="w-11 h-11 rounded-xl bg-[hsl(var(--primary)/0.15)] flex items-center justify-center shrink-0">
+                  <EyeOff className="w-5 h-5 text-[hsl(var(--primary))]" />
+                </div>
+                <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">01</span>
               </div>
-              <div>
-                <h4 className="font-medium text-[hsl(var(--foreground))] mb-1">Place Orders</h4>
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Set your rate, LTV, and term with optional ZK privacy protection
-                </p>
-              </div>
+              <h4 className="font-semibold text-[hsl(var(--foreground))] mb-1.5">Place Orders</h4>
+              <p className="text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
+                Set your rate, LTV, and term with optional ZK privacy protection
+              </p>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[hsl(var(--success))]/20 flex items-center justify-center shrink-0">
-                <Shield className="w-5 h-5 text-[hsl(var(--success))]" />
+            <div className="group rounded-2xl border border-[hsl(var(--border))] bg-white/[0.02] p-5 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="w-11 h-11 rounded-xl bg-[hsl(var(--success)/0.15)] flex items-center justify-center shrink-0">
+                  <Shield className="w-5 h-5 text-[hsl(var(--success))]" />
+                </div>
+                <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">02</span>
               </div>
-              <div>
-                <h4 className="font-medium text-[hsl(var(--foreground))] mb-1">AI Fair Matching</h4>
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Nautilus AI ensures fair matching with priority for retail users
-                </p>
-              </div>
+              <h4 className="font-semibold text-[hsl(var(--foreground))] mb-1.5">AI Fair Matching</h4>
+              <p className="text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
+                Nautilus AI ensures fair matching with priority for retail users
+              </p>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[hsl(var(--warning))]/20 flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-[hsl(var(--warning))]" />
+            <div className="group rounded-2xl border border-[hsl(var(--border))] bg-white/[0.02] p-5 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="w-11 h-11 rounded-xl bg-[hsl(var(--warning)/0.15)] flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5 text-[hsl(var(--warning))]" />
+                </div>
+                <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">03</span>
               </div>
-              <div>
-                <h4 className="font-medium text-[hsl(var(--foreground))] mb-1">Fast Finality</h4>
-                <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                  Orders matched on-chain via Mysticeti with ~400ms finality
-                </p>
-              </div>
+              <h4 className="font-semibold text-[hsl(var(--foreground))] mb-1.5">Fast Finality</h4>
+              <p className="text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
+                Orders matched on-chain via Mysticeti with ~400ms finality
+              </p>
             </div>
           </div>
         </div>
 
         <Dialog open={isPreviewOpen} onOpenChange={(open) => { setIsPreviewOpen(open); if (!open) setPreviewCandidate(null); }}>
-          <DialogContent className="sm:max-w-[520px] bg-[hsl(var(--card))] border-[hsl(var(--border))]">
+          <DialogContent className="sm:max-w-[520px] rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/90 backdrop-blur-xl">
             <DialogHeader>
               <DialogTitle className="text-[hsl(var(--foreground))]">Match Preview</DialogTitle>
             </DialogHeader>
             {previewCandidate && (
               <div className="space-y-4 text-sm">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-[hsl(var(--border))] p-3">
-                    <div className="text-xs text-[hsl(var(--muted-foreground))]">Lender</div>
-                    <div className="font-mono text-xs truncate">{previewCandidate.lend.creator || "—"}</div>
-                    <div className="mt-1">{formatNumber(previewCandidate.lend.amount)} {previewCandidate.lend.asset}</div>
-                    <div className="text-xs">@ {previewCandidate.lend.interestRate.toFixed(2)}% • {previewCandidate.lend.term}d</div>
+                  <div className="rounded-xl border border-[hsl(var(--success)/0.3)] bg-[hsl(var(--success)/0.06)] p-4">
+                    <div className="text-xs uppercase tracking-wider text-[hsl(var(--success))]">Lender</div>
+                    <div className="mt-1 font-mono text-xs truncate text-[hsl(var(--muted-foreground))]">{previewCandidate.lend.creator || "—"}</div>
+                    <div className="mt-2 text-base font-semibold text-[hsl(var(--foreground))]">{formatNumber(previewCandidate.lend.amount)} {previewCandidate.lend.asset}</div>
+                    <div className="text-xs text-[hsl(var(--muted-foreground))]">@ {previewCandidate.lend.interestRate.toFixed(2)}% • {previewCandidate.lend.term}d</div>
                   </div>
-                  <div className="rounded-lg border border-[hsl(var(--border))] p-3">
-                    <div className="text-xs text-[hsl(var(--muted-foreground))]">Borrower</div>
-                    <div className="font-mono text-xs truncate">{previewCandidate.borrow.creator || "—"}</div>
-                    <div className="mt-1">{formatNumber(previewCandidate.borrow.amount)} {previewCandidate.borrow.asset}</div>
-                    <div className="text-xs">@ {previewCandidate.borrow.interestRate.toFixed(2)}% • {previewCandidate.borrow.term}d</div>
+                  <div className="rounded-xl border border-[hsl(var(--warning)/0.3)] bg-[hsl(var(--warning)/0.06)] p-4">
+                    <div className="text-xs uppercase tracking-wider text-[hsl(var(--warning))]">Borrower</div>
+                    <div className="mt-1 font-mono text-xs truncate text-[hsl(var(--muted-foreground))]">{previewCandidate.borrow.creator || "—"}</div>
+                    <div className="mt-2 text-base font-semibold text-[hsl(var(--foreground))]">{formatNumber(previewCandidate.borrow.amount)} {previewCandidate.borrow.asset}</div>
+                    <div className="text-xs text-[hsl(var(--muted-foreground))]">@ {previewCandidate.borrow.interestRate.toFixed(2)}% • {previewCandidate.borrow.term}d</div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-[hsl(var(--border))] p-3 space-y-1">
-                  <div className="flex justify-between"><span>Composite score</span><span className="font-mono">{(previewCandidate.score * 100).toFixed(1)} / 100</span></div>
-                  <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"><span>Size fit</span><span>{(previewCandidate.breakdown.sizeFit * 100).toFixed(0)}%</span></div>
-                  <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"><span>Duration fit</span><span>{(previewCandidate.breakdown.durationFit * 100).toFixed(0)}%</span></div>
-                  <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"><span>Rate spread</span><span>{(previewCandidate.breakdown.rateGap * 100).toFixed(0)}%</span></div>
-                  <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"><span>Age priority</span><span>{(previewCandidate.breakdown.age * 100).toFixed(0)}%</span></div>
+                <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4 space-y-2">
+                  <div className="flex justify-between items-baseline"><span className="text-[hsl(var(--muted-foreground))]">Composite score</span><span className="font-mono text-lg font-bold text-[hsl(var(--primary))]">{(previewCandidate.score * 100).toFixed(1)} / 100</span></div>
+                  <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"><span>Size fit</span><span className="font-mono text-[hsl(var(--foreground))]">{(previewCandidate.breakdown.sizeFit * 100).toFixed(0)}%</span></div>
+                  <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"><span>Duration fit</span><span className="font-mono text-[hsl(var(--foreground))]">{(previewCandidate.breakdown.durationFit * 100).toFixed(0)}%</span></div>
+                  <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"><span>Rate spread</span><span className="font-mono text-[hsl(var(--foreground))]">{(previewCandidate.breakdown.rateGap * 100).toFixed(0)}%</span></div>
+                  <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))]"><span>Age priority</span><span className="font-mono text-[hsl(var(--foreground))]">{(previewCandidate.breakdown.age * 100).toFixed(0)}%</span></div>
                 </div>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                <p className="text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">
                   On-chain settlement signs the (lend, borrow, score) tuple via the registered Nautilus enclave.
                   If the enclave call fails the match is aborted and you can retry.
                 </p>
                 <div className="flex gap-2 justify-end pt-2">
-                  <Button variant="outline" onClick={() => { setIsPreviewOpen(false); setPreviewCandidate(null); }} disabled={isMatching}>Cancel</Button>
-                  <Button onClick={handleConfirmMatch} disabled={isMatching}>
+                  <Button variant="outline" className="rounded-full" onClick={() => { setIsPreviewOpen(false); setPreviewCandidate(null); }} disabled={isMatching}>Cancel</Button>
+                  <Button className="rounded-full bg-[hsl(var(--primary))] font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110" onClick={handleConfirmMatch} disabled={isMatching}>
                     {isMatching ? "Submitting..." : "Confirm Match"}
                   </Button>
                 </div>

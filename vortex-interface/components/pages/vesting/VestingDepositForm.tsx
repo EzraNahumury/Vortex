@@ -13,7 +13,12 @@ import {
 import { Lock, Shield, Sparkles, Loader2 } from "lucide-react";
 import { formatNumber, formatPercentage } from "@/lib/utils/format";
 import { useWallet } from "@/components/providers";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 import { fetchUserCoins, getCoinType } from "@/lib/sui/blockchain-service";
+import { isMockMode } from "@/lib/config";
+
+// Demo balance used in mock mode so the lock flow is exercisable without a funded wallet.
+const MOCK_SUI_BALANCE = 50000;
 
 interface VestingDepositFormProps {
   onSubmit: (data: {
@@ -25,24 +30,38 @@ interface VestingDepositFormProps {
 
 export function VestingDepositForm({ onSubmit, isSubmitting = false }: VestingDepositFormProps) {
   const { address, isConnected } = useWallet();
+  const account = useCurrentAccount();
   const [amount, setAmount] = useState("");
   const [lockDuration, setLockDuration] = useState("90");
   const [suiBalance, setSuiBalance] = useState(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
-  // Fetch user's SUI balance when connected
+  // Fetch user's SUI balance. A real connected wallet always shows its real balance; only the
+  // synthetic mock wallet (browsing without a wallet in mock mode) uses a demo balance.
   useEffect(() => {
-    if (isConnected && address) {
+    if (account?.address) {
       setIsLoadingBalance(true);
-      fetchUserCoins(address, getCoinType("SUI")).then((coins) => {
-        const total = coins.reduce((acc, coin) => acc + coin.balance, 0);
-        setSuiBalance(total);
-        setIsLoadingBalance(false);
-      });
-    } else {
-      setSuiBalance(0);
+      fetchUserCoins(account.address, getCoinType("SUI"))
+        .then((coins) => {
+          const total = (coins ?? []).reduce((acc, coin) => acc + (coin?.balance ?? 0), 0);
+          setSuiBalance(total);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch SUI balance:", err);
+          setSuiBalance(0);
+        })
+        .finally(() => {
+          setIsLoadingBalance(false);
+        });
+      return;
     }
-  }, [isConnected, address]);
+    if (isMockMode()) {
+      setSuiBalance(MOCK_SUI_BALANCE);
+      setIsLoadingBalance(false);
+      return;
+    }
+    setSuiBalance(0);
+  }, [account?.address]);
 
   const subsidyRate = parseInt(lockDuration) >= 365 ? 3.5 : parseInt(lockDuration) >= 180 ? 2.5 : parseInt(lockDuration) >= 90 ? 1.5 : 0.5;
   const baseApy = 4.5;
@@ -75,23 +94,23 @@ export function VestingDepositForm({ onSubmit, isSubmitting = false }: VestingDe
   const isValidAmount = parseFloat(amount || "0") > 0 && parseFloat(amount || "0") <= suiBalance;
 
   return (
-    <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-xl bg-[hsl(var(--accent))]/20 flex items-center justify-center">
-          <Lock className="w-6 h-6 text-[hsl(var(--accent))]" />
+    <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-6 backdrop-blur-xl shadow-[0_24px_70px_-30px_rgba(0,0,0,0.8)]">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--primary))]/10 ring-1 ring-[hsl(var(--primary)/0.25)]">
+          <Lock className="h-6 w-6 text-[hsl(var(--primary))]" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Lock Vested Tokens</h3>
+          <h3 className="text-lg font-bold text-[hsl(var(--foreground))]">Lock Vested Tokens</h3>
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Earn subsidy yield by locking your SUI
           </p>
         </div>
       </div>
 
-      <div className="p-4 bg-[hsl(var(--secondary))] rounded-xl mb-6">
+      <div className="mb-6 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-[hsl(var(--muted-foreground))]">Available SUI Balance</span>
-          <span className="text-lg font-semibold text-[hsl(var(--foreground))]">
+          <span className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Available SUI Balance</span>
+          <span className="text-lg font-bold text-[hsl(var(--foreground))]">
             {isLoadingBalance ? "..." : formatNumber(suiBalance)} SUI
           </span>
         </div>
@@ -99,7 +118,7 @@ export function VestingDepositForm({ onSubmit, isSubmitting = false }: VestingDe
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+          <label className="mb-2 block text-sm font-medium text-[hsl(var(--foreground))]">
             Amount to Lock
           </label>
           <div className="relative">
@@ -108,31 +127,31 @@ export function VestingDepositForm({ onSubmit, isSubmitting = false }: VestingDe
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="pr-16 bg-[hsl(var(--secondary))] border-none"
+              className="border-[hsl(var(--border))] bg-white/[0.02] pr-16"
             />
             {isConnected && suiBalance > 0 && (
               <button
                 type="button"
                 onClick={handleMaxClick}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[hsl(var(--primary))] cursor-pointer hover:underline"
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-sm font-semibold text-[hsl(var(--primary))] hover:underline"
               >
                 MAX
               </button>
             )}
           </div>
           {parseFloat(amount || "0") > suiBalance && suiBalance > 0 && (
-            <p className="text-xs text-[hsl(var(--destructive))] mt-1">
+            <p className="mt-1.5 text-xs text-[hsl(var(--destructive))]">
               Amount exceeds your balance
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">
+          <label className="mb-2 block text-sm font-medium text-[hsl(var(--foreground))]">
             Lock Duration
           </label>
           <Select value={lockDuration} onValueChange={setLockDuration}>
-            <SelectTrigger className="w-full bg-[hsl(var(--secondary))] border-none cursor-pointer">
+            <SelectTrigger className="w-full cursor-pointer border-[hsl(var(--border))] bg-white/[0.02]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -144,7 +163,7 @@ export function VestingDepositForm({ onSubmit, isSubmitting = false }: VestingDe
           </Select>
         </div>
 
-        <div className="space-y-3 p-4 bg-[hsl(var(--secondary))] rounded-xl">
+        <div className="space-y-3 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm text-[hsl(var(--muted-foreground))]">Base APY</span>
             <span className="text-sm font-medium text-[hsl(var(--foreground))]">
@@ -153,17 +172,17 @@ export function VestingDepositForm({ onSubmit, isSubmitting = false }: VestingDe
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[hsl(var(--accent))]" />
+              <Sparkles className="h-4 w-4 text-[hsl(var(--primary))]" />
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Subsidy Bonus</span>
             </div>
-            <span className="text-sm font-medium text-[hsl(var(--accent))]">
+            <span className="text-sm font-medium text-[hsl(var(--primary))]">
               +{formatPercentage(subsidyRate)}
             </span>
           </div>
-          <div className="pt-3 border-t border-[hsl(var(--border))]">
+          <div className="border-t border-[hsl(var(--border))] pt-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-[hsl(var(--foreground))]">Total APY</span>
-              <span className="text-lg font-bold text-[hsl(var(--primary))]">
+              <span className="text-xl font-bold text-[hsl(var(--primary))]">
                 {formatPercentage(totalApy)}
               </span>
             </div>
@@ -171,18 +190,18 @@ export function VestingDepositForm({ onSubmit, isSubmitting = false }: VestingDe
         </div>
 
         {parseFloat(amount || "0") > 0 && isValidAmount && (
-          <div className="p-4 bg-[hsl(var(--primary))]/10 rounded-xl">
+          <div className="rounded-xl border border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary))]/10 p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Projected Earnings</span>
-              <span className="text-lg font-bold text-[hsl(var(--primary))]">
+              <span className="text-xl font-bold text-[hsl(var(--primary))]">
                 +{formatNumber(projectedEarnings)} SUI
               </span>
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-2 p-4 bg-[hsl(var(--success))]/10 rounded-xl">
-          <Shield className="w-5 h-5 text-[hsl(var(--success))]" />
+        <div className="flex items-center gap-3 rounded-xl border border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success))]/10 p-4">
+          <Shield className="h-5 w-5 shrink-0 text-[hsl(var(--success))]" />
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Vested tokens are verified with ZK proofs for priority matching
           </p>
@@ -191,11 +210,11 @@ export function VestingDepositForm({ onSubmit, isSubmitting = false }: VestingDe
         <Button
           type="submit"
           disabled={isSubmitting || !isConnected || !isValidAmount}
-          className="w-full cursor-pointer bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] hover:bg-[hsl(var(--accent))]/90 disabled:opacity-50"
+          className="w-full cursor-pointer rounded-full bg-[hsl(var(--primary))] font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110 disabled:opacity-50"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Locking...
             </>
           ) : !isConnected ? (

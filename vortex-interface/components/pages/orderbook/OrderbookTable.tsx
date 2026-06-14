@@ -52,7 +52,7 @@ function aggregateOrders(orders: Order[], type: "lend" | "borrow"): OrderRowData
       price: item.price,
       amount: item.amount,
       total: runningTotal,
-      percentage: (runningTotal / maxTotal) * 100,
+      percentage: maxTotal > 0 ? (runningTotal / maxTotal) * 100 : 0,
       order: item.order,
     };
   });
@@ -74,20 +74,26 @@ function OrderbookSide({
     <div className="flex-1">
       <div className="px-4 py-3 border-b border-[hsl(var(--border))]">
         <div className="flex items-center gap-2">
-          {isBid ? (
-            <TrendingUp className="w-4 h-4 text-[hsl(var(--success))]" />
-          ) : (
-            <TrendingDown className="w-4 h-4 text-[hsl(var(--destructive))]" />
-          )}
+          <span
+            className={`flex h-6 w-6 items-center justify-center rounded-md ${
+              isBid ? "bg-[hsl(var(--success)/0.15)]" : "bg-[hsl(var(--destructive)/0.15)]"
+            }`}
+          >
+            {isBid ? (
+              <TrendingUp className="w-3.5 h-3.5 text-[hsl(var(--success))]" />
+            ) : (
+              <TrendingDown className="w-3.5 h-3.5 text-[hsl(var(--destructive))]" />
+            )}
+          </span>
           <h4
-            className={`text-sm font-medium ${
+            className={`text-sm font-semibold ${
               isBid ? "text-[hsl(var(--success))]" : "text-[hsl(var(--destructive))]"
             }`}
           >
             {isBid ? "Bids (Lend Orders)" : "Asks (Borrow Requests)"}
           </h4>
-          <span className="text-xs text-[hsl(var(--muted-foreground))]">
-            ({rows.length})
+          <span className="rounded-full bg-[hsl(var(--secondary))] px-2 py-0.5 text-[10px] text-[hsl(var(--muted-foreground))]">
+            {rows.length}
           </span>
         </div>
       </div>
@@ -96,13 +102,13 @@ function OrderbookSide({
         <table className="w-full">
           <thead>
             <tr className="border-b border-[hsl(var(--border))]">
-              <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
+              <th className="px-4 py-2 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide">
                 Rate
               </th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
+              <th className="px-4 py-2 text-right text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide">
                 Amount
               </th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">
+              <th className="px-4 py-2 text-right text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wide">
                 Total
               </th>
             </tr>
@@ -193,25 +199,28 @@ export function OrderbookTable({ bids, asks, isLoading = false }: OrderbookTable
 
   if (isLoading) {
     return (
-      <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-12 flex items-center justify-center">
+      <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-12 flex items-center justify-center">
         <div className="animate-pulse text-[hsl(var(--muted-foreground))]">Loading orderbook...</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
+    <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl overflow-hidden transition hover:border-[hsl(var(--primary)/0.3)]">
       {/* Header */}
       <div className="px-6 py-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
-        <h3 className="text-base font-medium text-[hsl(var(--foreground))]">Order Book</h3>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">Spread:</span>
-            <span className="text-xs font-medium text-[hsl(var(--foreground))]">{spread}%</span>
+        <div className="flex items-center gap-2.5">
+          <span className="h-2 w-2 rounded-full bg-[hsl(var(--primary))]" />
+          <h3 className="text-base font-semibold text-[hsl(var(--foreground))]">Order Book</h3>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 rounded-full bg-[hsl(var(--secondary))] px-3 py-1">
+            <span className="text-xs text-[hsl(var(--muted-foreground))]">Spread</span>
+            <span className="text-xs font-semibold text-[hsl(var(--primary))]">{spread}%</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">Market:</span>
-            <span className="text-xs font-medium text-[hsl(var(--foreground))]">USDC</span>
+          <div className="flex items-center gap-1.5 rounded-full bg-[hsl(var(--secondary))] px-3 py-1">
+            <span className="text-xs text-[hsl(var(--muted-foreground))]">Market</span>
+            <span className="text-xs font-semibold text-[hsl(var(--foreground))]">USDC</span>
           </div>
         </div>
       </div>
@@ -223,11 +232,11 @@ export function OrderbookTable({ bids, asks, isLoading = false }: OrderbookTable
       </div>
 
       {/* Footer with market info */}
-      <div className="px-6 py-3 border-t border-[hsl(var(--border))] bg-[hsl(var(--secondary))]/30">
+      <div className="px-6 py-3 border-t border-[hsl(var(--border))] bg-white/[0.02]">
         <div className="flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))]">
           <div className="flex items-center gap-4">
-            <span>Total Bids: ${formatNumber(bidRows.reduce((acc, r) => acc + r.amount, 0))}</span>
-            <span>Total Asks: ${formatNumber(askRows.reduce((acc, r) => acc + r.amount, 0))}</span>
+            <span>Total Bids: <span className="text-[hsl(var(--success))]">${formatNumber(bidRows.reduce((acc, r) => acc + r.amount, 0))}</span></span>
+            <span>Total Asks: <span className="text-[hsl(var(--destructive))]">${formatNumber(askRows.reduce((acc, r) => acc + r.amount, 0))}</span></span>
           </div>
           <span>Powered by Vortex CLOB • DeepBook Style</span>
         </div>

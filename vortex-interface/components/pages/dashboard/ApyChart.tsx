@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChartDataPoint } from "@/lib/types";
 import {
   Select,
@@ -15,13 +15,41 @@ interface ApyChartProps {
   currentApy: number;
 }
 
-export function ApyChart({ data, currentApy }: ApyChartProps) {
+const RANGES: Record<string, { points: number; stepDays: number; monthly?: boolean }> = {
+  "1month": { points: 30, stepDays: 1 },
+  "3months": { points: 26, stepDays: 3.5 },
+  "6months": { points: 26, stepDays: 7 },
+  "1year": { points: 24, stepDays: 15, monthly: true },
+};
+
+// Deterministic-ish demo series so each range visibly differs (lending data is mock).
+function buildSeries(range: string, anchor: number): ChartDataPoint[] {
+  const cfg = RANGES[range] ?? RANGES["3months"];
+  const base = Number.isFinite(anchor) && anchor > 0 ? anchor : 4;
+  const now = Date.now();
+  const out: ChartDataPoint[] = [];
+  for (let i = 0; i < cfg.points; i++) {
+    const fromEnd = cfg.points - 1 - i;
+    const d = new Date(now - fromEnd * cfg.stepDays * 86400000);
+    const t = i / (cfg.points - 1);
+    const wave = Math.sin(i * 0.7) * 0.06 + Math.sin(i * 0.29 + 1) * 0.04;
+    const value = Math.max(0.5, base * (0.8 + 0.25 * t + wave));
+    const date = cfg.monthly
+      ? d.toLocaleDateString("en-US", { month: "short" })
+      : d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    out.push({ date, value });
+  }
+  return out;
+}
+
+export function ApyChart({ currentApy }: ApyChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [range, setRange] = useState("3months");
+  const series = useMemo(() => buildSeries(range, currentApy), [range, currentApy]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -38,15 +66,17 @@ export function ApyChart({ data, currentApy }: ApyChartProps) {
     const chartHeight = height - padding.top - padding.bottom;
 
     ctx.clearRect(0, 0, width, height);
+    if (series.length === 0) return;
 
-    if (data.length === 0) return;
-
-    const values = data.map((d) => d.value);
+    const values = series.map((d) => d.value);
     const minValue = Math.min(...values) * 0.98;
     const maxValue = Math.max(...values) * 1.02;
-    const valueRange = maxValue - minValue;
+    const valueRange = maxValue - minValue || 1;
 
-    const getX = (index: number) => padding.left + (index / (data.length - 1)) * chartWidth;
+    const getX = (index: number) =>
+      series.length === 1
+        ? padding.left + chartWidth
+        : padding.left + (index / (series.length - 1)) * chartWidth;
     const getY = (value: number) => padding.top + chartHeight - ((value - minValue) / valueRange) * chartHeight;
 
     ctx.strokeStyle = "hsla(215, 20%, 25%, 0.3)";
@@ -63,34 +93,34 @@ export function ApyChart({ data, currentApy }: ApyChartProps) {
     ctx.setLineDash([]);
 
     const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
-    gradient.addColorStop(0, "hsla(189, 94%, 43%, 0.15)");
-    gradient.addColorStop(1, "hsla(189, 94%, 43%, 0)");
+    gradient.addColorStop(0, "hsla(74, 100%, 50%, 0.22)");
+    gradient.addColorStop(1, "hsla(74, 100%, 50%, 0)");
 
     ctx.beginPath();
     ctx.moveTo(getX(0), height - padding.bottom);
-    data.forEach((point, index) => {
+    series.forEach((point, index) => {
       ctx.lineTo(getX(index), getY(point.value));
     });
-    ctx.lineTo(getX(data.length - 1), height - padding.bottom);
+    ctx.lineTo(getX(series.length - 1), height - padding.bottom);
     ctx.closePath();
     ctx.fillStyle = gradient;
     ctx.fill();
 
     ctx.beginPath();
-    ctx.moveTo(getX(0), getY(data[0].value));
-    data.forEach((point, index) => {
-      if (index > 0) {
-        ctx.lineTo(getX(index), getY(point.value));
-      }
+    ctx.moveTo(getX(0), getY(series[0].value));
+    series.forEach((point, index) => {
+      if (index > 0) ctx.lineTo(getX(index), getY(point.value));
     });
-    ctx.strokeStyle = "hsl(189, 94%, 43%)";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = "hsl(74, 100%, 50%)";
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = "hsla(74, 100%, 50%, 0.5)";
+    ctx.shadowBlur = 12;
     ctx.stroke();
+    ctx.shadowBlur = 0;
 
-    const lastPoint = data[data.length - 1];
-    const lastX = getX(data.length - 1);
+    const lastPoint = series[series.length - 1];
+    const lastX = getX(series.length - 1);
     const lastY = getY(lastPoint.value);
-
     ctx.fillStyle = "hsl(215, 20%, 65%)";
     ctx.font = "11px Inter, -apple-system, sans-serif";
     ctx.textAlign = "left";
@@ -99,13 +129,13 @@ export function ApyChart({ data, currentApy }: ApyChartProps) {
     ctx.fillStyle = "hsl(215, 20%, 50%)";
     ctx.font = "11px Inter, -apple-system, sans-serif";
     ctx.textAlign = "center";
-    const labelStep = Math.ceil(data.length / 8);
-    data.forEach((point, index) => {
-      if (index % labelStep === 0 || index === data.length - 1) {
+    const labelStep = Math.ceil(series.length / 8);
+    series.forEach((point, index) => {
+      if (index % labelStep === 0 || index === series.length - 1) {
         ctx.fillText(point.date, getX(index), height - padding.bottom + 20);
       }
     });
-  }, [data]);
+  }, [series]);
 
   return (
     <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-6">
@@ -118,11 +148,13 @@ export function ApyChart({ data, currentApy }: ApyChartProps) {
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-semibold text-[hsl(var(--foreground))]">1.{Math.floor(currentApy * 26)}</span>
+            <span className="text-3xl font-semibold text-[hsl(var(--foreground))]">
+              {(1 + Math.min(Math.max(Number.isFinite(currentApy) ? currentApy : 0, 0), 100) / 100).toFixed(2)}
+            </span>
             <span className="text-sm text-[hsl(var(--success))]">+0.8%</span>
           </div>
         </div>
-        <Select defaultValue="3months">
+        <Select value={range} onValueChange={setRange}>
           <SelectTrigger className="w-[120px] h-9 bg-[hsl(var(--secondary))] border-none rounded-lg cursor-pointer">
             <SelectValue />
           </SelectTrigger>

@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Navbar } from "@/components/shared";
+import { Navbar, AppBackground } from "@/components/shared";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useWallet } from "@/components/providers";
 import { fetchUserCoins, getCoinType } from "@/lib/sui/blockchain-service";
 import { executeMintToken } from "@/lib/sui/transaction-executor";
 import { formatNumber } from "@/lib/utils/format";
-import { Loader2, ExternalLink, Droplets, Wallet } from "lucide-react";
+import { Loader2, ExternalLink, Droplets, Wallet, Sparkles, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 
@@ -23,37 +22,46 @@ export default function FaucetPage() {
   const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({});
   const [mintingMap, setMintingMap] = useState<Record<string, boolean>>({});
 
-  const fetchBalances = async () => {
-    if (!address) return;
-    
+  const fetchBalances = async (targetAddress?: string | null) => {
+    const account = targetAddress ?? address;
+    if (!account) return;
+
     const newBalances: Record<string, number> = {};
-    
-    // Fetch SUI balance
-    const suiCoins = await fetchUserCoins(address, getCoinType("SUI"));
-    newBalances["SUI"] = suiCoins.reduce((acc, coin) => acc + coin.balance, 0);
+
+    // Fetch SUI balance (guard against unexpected throws)
+    try {
+      const suiCoins = await fetchUserCoins(account, getCoinType("SUI"));
+      newBalances["SUI"] = suiCoins.reduce((acc, coin) => acc + coin.balance, 0);
+    } catch (e) {
+      console.error("Failed to fetch SUI balance", e);
+      newBalances["SUI"] = 0;
+    }
 
     // Fetch other tokens
     for (const token of FAUCET_TOKENS) {
       setLoadingMap(prev => ({ ...prev, [token.symbol]: true }));
       try {
-        const coins = await fetchUserCoins(address, getCoinType(token.symbol));
+        const coins = await fetchUserCoins(account, getCoinType(token.symbol));
         newBalances[token.symbol] = coins.reduce((acc, coin) => acc + coin.balance, 0);
       } catch (e) {
         console.error(`Failed to fetch ${token.symbol} balance`, e);
+        newBalances[token.symbol] = 0;
       } finally {
         setLoadingMap(prev => ({ ...prev, [token.symbol]: false }));
       }
     }
-    
+
     setBalances(newBalances);
   };
 
   useEffect(() => {
-    if (isConnected) {
-      fetchBalances();
+    if (isConnected && address) {
+      fetchBalances(address);
     } else {
       setBalances({});
+      setLoadingMap({});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, address]);
 
   const handleMint = async (tokenSymbol: string, amount: number) => {
@@ -84,7 +92,7 @@ export default function FaucetPage() {
           </div>
         );
         // Refresh balances after a short delay
-        setTimeout(fetchBalances, 2000);
+        setTimeout(() => fetchBalances(address), 2000);
       } else {
         toast.error(result.error || `Failed to mint ${tokenSymbol}`);
       }
@@ -97,96 +105,120 @@ export default function FaucetPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))]">
+    <div className="relative min-h-screen overflow-x-clip bg-[hsl(var(--background))] font-display">
+      <AppBackground />
       <Navbar />
 
-      <div className="absolute top-0 left-0 right-0 h-[400px] bg-[radial-gradient(ellipse_at_top,_hsla(220,50%,20%,0.3)_0%,_transparent_70%)] pointer-events-none" />
-
-      <main className="relative pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-[hsl(var(--primary))]/10 mb-4">
-            <Droplets className="w-8 h-8 text-[hsl(var(--primary))]" />
+      <main className="relative z-10 pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        {/* ============================ HEADER ============================ */}
+        <div className="mb-12 text-center">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))] bg-white/[0.03] px-3.5 py-1.5 text-xs tracking-wide">
+            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary))]" />
+            <span className="lp-muted uppercase">Sui Testnet · No real value</span>
           </div>
-          <h1 className="text-4xl font-bold text-[hsl(var(--foreground))] mb-4">Token Faucet</h1>
-          <p className="text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto">
+
+          <div className="relative mx-auto mb-6 inline-flex items-center justify-center">
+            <div className="absolute inset-0 rounded-2xl bg-[hsl(var(--primary))]/20 blur-xl" />
+            <div className="relative inline-flex items-center justify-center rounded-2xl border border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary))]/10 p-4 lp-float-sm">
+              <Droplets className="h-8 w-8 text-[hsl(var(--primary))]" />
+            </div>
+          </div>
+
+          <h1 className="text-[clamp(34px,5vw,56px)] font-bold leading-[1.02] text-[hsl(var(--foreground))]">
+            Token <span className="text-[hsl(var(--primary))]">Faucet.</span>
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[hsl(var(--muted-foreground))]">
             Get mock tokens to test the Vortex protocol on Sui Testnet.
             These tokens have no real value.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        {/* ============================= CARDS ============================= */}
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* SUI Card (Info only) */}
-          <Card className="bg-[hsl(var(--card))] border-[hsl(var(--border))] overflow-hidden flex flex-col">
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-10 h-10 rounded-full bg-[hsl(var(--secondary))] flex items-center justify-center overflow-hidden">
-                  <Image src="/token/sui.png" alt="SUI" width={40} height={40} />
-                </div>
-                <div className="px-2.5 py-0.5 rounded-full bg-[hsl(var(--secondary))] text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  Gas Token
+          <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-6 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--secondary))]">
+                <Image src="/token/sui.png" alt="SUI" width={48} height={48} />
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--secondary))] px-3 py-1 text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                <Sparkles className="h-3 w-3 text-[hsl(var(--primary))]" />
+                Gas Token
+              </span>
+            </div>
+
+            <div className="mb-1 text-xl font-bold text-[hsl(var(--foreground))]">SUI</div>
+            <p className="mb-5 text-sm text-[hsl(var(--muted-foreground))]">Sui Network Token</p>
+
+            <div className="flex-1 space-y-4">
+              <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4">
+                <div className="text-[11px] font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Your Balance</div>
+                <div className="mt-1 text-2xl font-bold text-[hsl(var(--foreground))]">
+                   {isConnected ? formatNumber(balances["SUI"] || 0) : "—"}{" "}
+                   <span className="text-base font-semibold text-[hsl(var(--muted-foreground))]">SUI</span>
                 </div>
               </div>
-              <CardTitle className="text-xl">SUI</CardTitle>
-              <CardDescription>Sui Network Token</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-4">
-              <div className="p-4 rounded-xl bg-[hsl(var(--secondary))]/50 space-y-1">
-                <div className="text-sm text-[hsl(var(--muted-foreground))]">Your Balance</div>
-                <div className="text-2xl font-semibold">
-                   {isConnected ? formatNumber(balances["SUI"] || 0) : "—"} SUI
-                </div>
-              </div>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              <p className="text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
                 To get SUI testnet tokens, use the faucet in your wallet or the official Sui Discord.
               </p>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                variant="outline" 
-                className="w-full gap-2 cursor-pointer"
+            </div>
+
+            <div className="mt-6">
+              <Button
+                variant="outline"
+                className="w-full gap-2 cursor-pointer rounded-full"
                 onClick={() => window.open('https://discord.gg/sui', '_blank')}
               >
                 Get SUI on Discord <ExternalLink className="w-4 h-4" />
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
 
           {/* Mock Tokens */}
           {FAUCET_TOKENS.map((token) => (
-            <Card key={token.symbol} className="bg-[hsl(var(--card))] border-[hsl(var(--border))] overflow-hidden flex flex-col">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-10 h-10 rounded-full bg-[hsl(var(--secondary))] flex items-center justify-center overflow-hidden">
-                    <Image src={token.logo} alt={token.symbol} width={40} height={40} />
-                  </div>
-                  <div className="px-2.5 py-0.5 rounded-full bg-[hsl(var(--secondary))] text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                    Test Token
-                  </div>
+            <div
+              key={token.symbol}
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 p-6 backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]"
+            >
+              {/* subtle neon top accent */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--primary)/0.5)] to-transparent opacity-0 transition group-hover:opacity-100" />
+
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--secondary))]">
+                  <Image src={token.logo} alt={token.symbol} width={48} height={48} />
                 </div>
-                <CardTitle className="text-xl">{token.symbol}</CardTitle>
-                <CardDescription>{token.name}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 space-y-4">
-                <div className="p-4 rounded-xl bg-[hsl(var(--secondary))]/50 space-y-1">
-                  <div className="text-sm text-[hsl(var(--muted-foreground))]">Your Balance</div>
-                  <div className="text-2xl font-semibold">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--secondary))] px-3 py-1 text-xs font-medium text-[hsl(var(--muted-foreground))]">
+                  <ShieldCheck className="h-3 w-3 text-[hsl(var(--primary))]" />
+                  Test Token
+                </span>
+              </div>
+
+              <div className="mb-1 text-xl font-bold text-[hsl(var(--foreground))]">{token.symbol}</div>
+              <p className="mb-5 text-sm text-[hsl(var(--muted-foreground))]">{token.name}</p>
+
+              <div className="flex-1 space-y-4">
+                <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4">
+                  <div className="text-[11px] font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Your Balance</div>
+                  <div className="mt-1 text-2xl font-bold text-[hsl(var(--foreground))]">
                     {loadingMap[token.symbol] ? (
                       <span className="animate-pulse">...</span>
                     ) : (
                       isConnected ? formatNumber(balances[token.symbol] || 0) : "—"
-                    )} {token.symbol}
+                    )}{" "}
+                    <span className="text-base font-semibold text-[hsl(var(--muted-foreground))]">{token.symbol}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/20">
-                  <Wallet className="w-4 h-4 text-[hsl(var(--primary))]" />
-                  <span className="text-sm text-[hsl(var(--primary))] font-medium">
+                <div className="flex items-center gap-2 rounded-xl border border-[hsl(var(--primary)/0.2)] bg-[hsl(var(--primary))]/10 p-3.5">
+                  <Wallet className="h-4 w-4 shrink-0 text-[hsl(var(--primary))]" />
+                  <span className="text-sm font-medium text-[hsl(var(--primary))]">
                     Mint Amount: {formatNumber(token.mintAmount)} {token.symbol}
                   </span>
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full cursor-pointer bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
+              </div>
+
+              <div className="mt-6">
+                <Button
+                  className="w-full cursor-pointer rounded-full bg-[hsl(var(--primary))] font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110"
                   disabled={!isConnected || mintingMap[token.symbol]}
                   onClick={() => handleMint(token.symbol, token.mintAmount)}
                 >
@@ -201,8 +233,8 @@ export default function FaucetPage() {
                     "Mint Tokens"
                   )}
                 </Button>
-              </CardFooter>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       </main>

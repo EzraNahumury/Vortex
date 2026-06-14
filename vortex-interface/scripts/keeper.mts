@@ -173,6 +173,25 @@ async function allocate(supplyDusdc: number, hedgeDusdc: number) {
   );
 }
 
+/** Strategist-signed: supply idle dUSDC into the Predict PLP pool (no hedge leg). */
+async function supply(amountDusdc: number) {
+  const v = await readVault();
+  if (v.idle === BigInt(0)) {
+    console.error("Vault idle is 0 — deposit dUSDC first.");
+    process.exit(1);
+  }
+  const supplyBase = amountDusdc > 0 ? toQuoteBase(amountDusdc) : (v.idle * BigInt(80)) / BigInt(100);
+  if (supplyBase > v.idle) {
+    console.error(`supply ${fromQuoteBase(supplyBase)} > idle ${fromQuoteBase(v.idle)} dUSDC`);
+    process.exit(1);
+  }
+  const strat = strategistKeypair(STRATEGIST_SK);
+  const nonce = BigInt(Date.now());
+  const msg = buildSupplyMessage(predictConfig.vaultId, nonce, supplyBase);
+  const sig = await signLeg(strat, msg);
+  await exec(buildSupplyLegTx(supplyBase, nonce, sig), `supply ${fromQuoteBase(supplyBase)} dUSDC -> PLP`);
+}
+
 /** Mint a single OTM-down crash hedge on the soonest live oracle (no supply leg). */
 async function hedge(hedgeDusdc: number, otmPct = 2, qtyContracts = 0.5) {
   const v = await readVault();
@@ -284,6 +303,7 @@ async function main() {
   if (cmd === "status") return status();
   if (cmd === "deposit") return deposit(Number(a[3] || 0));
   if (cmd === "allocate") return allocate(Number(a[3] || 0), Number(a[4] || 0));
+  if (cmd === "supply") return supply(Number(a[3] || 0));
   if (cmd === "hedge") return hedge(Number(a[3] || 0), a[4] ? Number(a[4]) : 2, a[5] ? Number(a[5]) : 0.5);
   if (cmd === "unwind") return unwind(Number(a[3] || 0));
   if (cmd === "redeem") return redeem(a[3], a[4], a[5], a[6], a[7]);

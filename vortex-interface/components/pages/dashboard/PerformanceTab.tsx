@@ -20,17 +20,19 @@ function PerformanceCard({ title, value, change, subtitle, icon }: PerformanceCa
   
   const Icon = IconMap[icon];
   const isPositive = change && change > 0;
-  
+
   return (
-    <div className="bg-[hsl(var(--secondary))]/30 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
-        <span className="text-sm text-[hsl(var(--muted-foreground))]">{title}</span>
+    <div className="min-w-0 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
+      <div className="flex items-center gap-2 mb-2.5">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[hsl(var(--border))] bg-white/[0.02]">
+          <Icon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+        </span>
+        <span className="truncate text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">{title}</span>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-xl font-semibold text-[hsl(var(--foreground))]">{value}</span>
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span className="text-2xl font-bold text-[hsl(var(--foreground))]">{value}</span>
         {change !== undefined && (
-          <span className={`text-sm ${isPositive ? "text-[hsl(var(--success))]" : "text-[hsl(var(--destructive))]"}`}>
+          <span className={`text-sm font-medium ${isPositive ? "text-[hsl(var(--success))]" : "text-[hsl(var(--destructive))]"}`}>
             {isPositive ? "+" : ""}{change.toFixed(2)}%
           </span>
         )}
@@ -53,9 +55,9 @@ interface PerformanceTabProps {
 
 export function PerformanceTab({ stats }: PerformanceTabProps) {
   return (
-    <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-6">
-      <h3 className="text-lg font-semibold text-[hsl(var(--foreground))] mb-4">Performance Metrics</h3>
-      
+    <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-6">
+      <h3 className="font-display text-xl font-bold text-[hsl(var(--foreground))] mb-5">Performance Metrics</h3>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <PerformanceCard
           title="30D APY"
@@ -84,38 +86,38 @@ export function PerformanceTab({ stats }: PerformanceTabProps) {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-[hsl(var(--secondary))]/30 rounded-xl p-4">
-          <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-3">Historical Returns</h4>
-          <div className="space-y-2">
-            <div className="flex justify-between">
+        <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-5">
+          <h4 className="text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-4">Historical Returns</h4>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/60 pb-2.5">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Last 7 days</span>
-              <span className="text-sm text-[hsl(var(--success))]">+0.08%</span>
+              <span className="text-sm font-medium text-[hsl(var(--success))]">+0.08%</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/60 pb-2.5">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Last 30 days</span>
-              <span className="text-sm text-[hsl(var(--success))]">+0.35%</span>
+              <span className="text-sm font-medium text-[hsl(var(--success))]">+0.35%</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Last 90 days</span>
-              <span className="text-sm text-[hsl(var(--success))]">+1.05%</span>
+              <span className="text-sm font-medium text-[hsl(var(--success))]">+1.05%</span>
             </div>
           </div>
         </div>
-        
-        <div className="bg-[hsl(var(--secondary))]/30 rounded-xl p-4">
-          <h4 className="text-sm font-medium text-[hsl(var(--foreground))] mb-3">Matching Stats</h4>
-          <div className="space-y-2">
-            <div className="flex justify-between">
+
+        <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-5">
+          <h4 className="text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))] mb-4">Matching Stats</h4>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/60 pb-2.5">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Orders matched today</span>
-              <span className="text-sm text-[hsl(var(--foreground))]">142</span>
+              <span className="text-sm font-medium text-[hsl(var(--foreground))]">142</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between border-b border-[hsl(var(--border))]/60 pb-2.5">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">Fairness score</span>
-              <span className="text-sm text-[hsl(var(--primary))]">{stats.fairnessScore}%</span>
+              <span className="text-sm font-medium text-[hsl(var(--primary))]">{stats.fairnessScore}%</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-sm text-[hsl(var(--muted-foreground))]">AI matches</span>
-              <span className="text-sm text-[hsl(var(--foreground))]">89%</span>
+              <span className="text-sm font-medium text-[hsl(var(--foreground))]">89%</span>
             </div>
           </div>
         </div>

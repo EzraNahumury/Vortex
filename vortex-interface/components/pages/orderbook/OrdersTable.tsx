@@ -24,27 +24,27 @@ export function OrdersTable({ orders, title, onCancel, emptyMessage = "No orders
 
   if (orders.length === 0) {
     return (
-      <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
+      <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-[hsl(var(--border))]">
-          <h3 className="text-base font-medium text-[hsl(var(--foreground))]">{title}</h3>
+          <h3 className="text-base font-semibold text-[hsl(var(--foreground))]">{title}</h3>
         </div>
-        <div className="px-6 py-12 text-center">
-          <p className="text-[hsl(var(--muted-foreground))]">{emptyMessage}</p>
+        <div className="px-6 py-16 text-center">
+          <p className="text-sm text-[hsl(var(--muted-foreground))]">{emptyMessage}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] overflow-hidden">
+    <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl overflow-hidden transition hover:border-[hsl(var(--primary)/0.3)]">
       <div className="px-6 py-4 border-b border-[hsl(var(--border))] flex items-center justify-between">
-        <h3 className="text-base font-medium text-[hsl(var(--foreground))]">{title}</h3>
-        <span className="text-sm text-[hsl(var(--muted-foreground))]">{orders.length} orders</span>
+        <h3 className="text-base font-semibold text-[hsl(var(--foreground))]">{title}</h3>
+        <span className="rounded-full bg-[hsl(var(--secondary))] px-3 py-1 text-xs text-[hsl(var(--muted-foreground))]">{orders.length} orders</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[hsl(var(--border))]">
+            <tr className="border-b border-[hsl(var(--border))] bg-white/[0.02]">
               <th className="px-6 py-4 text-left text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
                 Order
               </th>
@@ -80,7 +80,7 @@ export function OrdersTable({ orders, title, onCancel, emptyMessage = "No orders
             {orders.map((order) => (
               <tr
                 key={order.id}
-                className="border-b border-[hsl(var(--border))] last:border-b-0 hover:bg-[hsl(var(--secondary))]/30 transition-colors"
+                className="border-b border-[hsl(var(--border))] last:border-b-0 hover:bg-[hsl(var(--primary)/0.04)] transition-colors"
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
@@ -102,11 +102,12 @@ export function OrdersTable({ orders, title, onCancel, emptyMessage = "No orders
                           {order.type === "lend" ? "L" : "B"}
                         </span>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full overflow-hidden border-2 border-[hsl(var(--card))]">
-                        <img 
-                          src={`/token/${order.asset.toLowerCase()}.png`} 
-                          alt={order.asset} 
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full overflow-hidden border-2 border-[hsl(var(--card))] bg-[hsl(var(--secondary))]">
+                        <img
+                          src={`/token/${(order.asset || "").toLowerCase()}.png`}
+                          alt={order.asset || "asset"}
                           className="w-full h-full object-cover"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                         />
                       </div>
                     </div>

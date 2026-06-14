@@ -154,76 +154,81 @@ export function DepositPanel({ asset, apy }: DepositPanelProps) {
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl">
-      <div className="bg-[hsl(var(--card))] rounded-2xl border border-[hsl(var(--border))] p-6">
+      <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-base font-medium text-[hsl(var(--foreground))]">Deposit {asset}</h3>
-          <div className="relative w-8 h-8 rounded-full overflow-hidden">
-            <Image 
-              src={`/token/${asset.toLowerCase()}.png`} 
-              alt={asset} 
-              fill 
-              className="object-cover" 
+          <div className="flex flex-col">
+            <span className="text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Quick Lend</span>
+            <h3 className="font-display text-lg font-bold text-[hsl(var(--foreground))]">Deposit {asset}</h3>
+          </div>
+          <div className="relative w-9 h-9 rounded-full overflow-hidden ring-1 ring-[hsl(var(--border))]">
+            <Image
+              src={`/token/${asset.toLowerCase()}.png`}
+              alt={asset}
+              fill
+              className="object-cover"
             />
           </div>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] px-4 py-3.5">
           <div className="relative">
             <Input
               type="number"
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
               placeholder="0.00"
-              className="text-2xl font-semibold bg-transparent border-none p-0 h-auto focus-visible:ring-0"
+              className="text-2xl font-bold bg-transparent border-none p-0 h-auto focus-visible:ring-0"
             />
             {isConnected && userBalance > 0 && (
               <button
                 type="button"
                 onClick={handleMaxClick}
-                className="absolute right-0 top-1/2 -translate-y-1/2 text-xs text-[hsl(var(--primary))] hover:underline cursor-pointer px-2 py-1 rounded bg-[hsl(var(--secondary))]"
+                className="absolute right-0 top-1/2 -translate-y-1/2 text-xs font-semibold text-[hsl(var(--primary))] cursor-pointer px-2.5 py-1 rounded-full border border-[hsl(var(--primary)/0.3)] bg-[hsl(var(--primary))]/10 hover:bg-[hsl(var(--primary))]/20 transition-colors"
               >
                 MAX
               </button>
             )}
           </div>
-          <div className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <div className="text-xs text-[hsl(var(--muted-foreground))] mt-1.5">
             Balance: {isLoadingBalance ? "..." : formatNumber(userBalance)} {asset}
           </div>
         </div>
 
         <div className="space-y-4 mb-6">
           <div className="flex gap-4">
-             <div className="flex-1 space-y-1">
-                <label className="text-xs text-[hsl(var(--muted-foreground))]">APY (%)</label>
+             <div className="flex-1 space-y-1.5">
+                <label className="text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">APY (%)</label>
                 <Input
                     type="number"
                     value={interestRate}
                     onChange={(e) => setInterestRate(e.target.value)}
-                    className="bg-[hsl(var(--secondary))]/50 border-0"
+                    className="bg-white/[0.02] border border-[hsl(var(--border))]"
                 />
              </div>
-             <div className="flex-1 space-y-1">
-                <label className="text-xs text-[hsl(var(--muted-foreground))]">Duration (Days)</label>
+             <div className="flex-1 space-y-1.5">
+                <label className="text-xs font-medium uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Duration (Days)</label>
                 <Input
                     type="number"
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
-                    className="bg-[hsl(var(--secondary))]/50 border-0"
+                    className="bg-white/[0.02] border border-[hsl(var(--border))]"
                 />
              </div>
           </div>
 
-          <div className="flex items-center justify-between py-3 border-b border-[hsl(var(--border))]">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[hsl(var(--success))]" />
-              <span className="text-sm text-[hsl(var(--foreground))]">Lending Amount</span>
+          <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[hsl(var(--success))]" />
+                <span className="text-sm text-[hsl(var(--muted-foreground))]">Lending Amount</span>
+              </div>
+              <span className="text-sm font-medium text-[hsl(var(--foreground))]">{formatNumber(amount)} {asset}</span>
             </div>
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">{formatNumber(amount)} {asset}</span>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-[hsl(var(--muted-foreground))]">Est. Returns (Total)</span>
-            <span className="text-sm font-medium text-[hsl(var(--success))]">+{formatNumber(projectedEarnings)} {asset}</span>
+            <div className="flex items-center justify-between border-t border-[hsl(var(--border))]/60 pt-3">
+              <span className="text-sm text-[hsl(var(--muted-foreground))]">Est. Returns (Total)</span>
+              <span className="text-sm font-semibold text-[hsl(var(--success))]">+{formatNumber(projectedEarnings)} {asset}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -232,7 +237,7 @@ export function DepositPanel({ asset, apy }: DepositPanelProps) {
         <Button
           onClick={handleLend}
           disabled={amount <= 0 || amount > userBalance || isDepositing}
-          className="w-full h-12 cursor-pointer rounded-2xl bg-[hsl(var(--success))] text-white hover:bg-[hsl(var(--success))]/90 font-medium disabled:opacity-50"
+          className="w-full h-12 cursor-pointer rounded-full bg-[hsl(var(--success))] text-white hover:brightness-110 font-semibold disabled:opacity-50 transition"
         >
           {isDepositing ? (
             <>
@@ -247,7 +252,7 @@ export function DepositPanel({ asset, apy }: DepositPanelProps) {
         <Button
           onClick={connectWallet}
           disabled={isConnecting}
-          className="w-full h-12 cursor-pointer rounded-2xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary))]/90 font-medium"
+          className="w-full h-12 cursor-pointer rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:brightness-110 font-semibold transition"
         >
           {isConnecting ? (
             <>

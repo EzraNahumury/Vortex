@@ -2,31 +2,32 @@
 
 :root {
   --radius: 0.75rem;
-  --background: 220 20% 10%;
-  --foreground: 0 0% 98%;
-  --card: 220 20% 13%;
-  --card-foreground: 0 0% 98%;
-  --popover: 220 20% 13%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 199 89% 48%;
-  --primary-foreground: 220 20% 10%;
-  --secondary: 220 15% 18%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 220 15% 25%;
-  --muted-foreground: 220 10% 55%;
-  --accent: 85 80% 55%;
-  --accent-foreground: 220 20% 10%;
+  /* Vortex dark + neon-lime theme (matches the landing page) */
+  --background: 165 24% 4%;        /* near-black #070b0a */
+  --foreground: 150 12% 96%;       /* #f4f7f5 */
+  --card: 160 16% 7%;              /* lifted near-black */
+  --card-foreground: 150 12% 96%;
+  --popover: 160 18% 6%;
+  --popover-foreground: 150 12% 96%;
+  --primary: 74 100% 50%;          /* neon lime #b6ff00 */
+  --primary-foreground: 150 45% 6%;
+  --secondary: 155 12% 12%;
+  --secondary-foreground: 150 12% 96%;
+  --muted: 150 8% 20%;
+  --muted-foreground: 150 5% 56%;  /* #8a918d */
+  --accent: 74 100% 50%;
+  --accent-foreground: 150 45% 6%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
-  --border: 220 15% 20%;
-  --input: 220 15% 20%;
-  --ring: 199 89% 48%;
-  --chart-1: 199 89% 48%;
-  --chart-2: 85 80% 55%;
-  --chart-3: 262 80% 65%;
-  --chart-4: 340 82% 65%;
-  --chart-5: 45 93% 58%;
-  --success: 160 84% 39%;
+  --border: 155 10% 15%;
+  --input: 155 10% 15%;
+  --ring: 74 100% 50%;
+  --chart-1: 74 100% 50%;
+  --chart-2: 150 70% 45%;
+  --chart-3: 175 70% 50%;
+  --chart-4: 45 93% 58%;
+  --chart-5: 270 70% 65%;
+  --success: 150 72% 45%;
   --warning: 38 92% 50%;
 }
 
@@ -40,6 +41,12 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* App headings use the geometric display font (matches the landing) */
+h1, h2 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .bg-default {
@@ -117,4 +124,145 @@ input[type="number"] {
 
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ============================================================
+   LANDING PAGE — dark + neon-green, futuristic Web3 (scoped .lp-*)
+   ============================================================ */
+:root, .lp-root {
+  --lp-bg: #070b0a;
+  --lp-bg-2: #0a0f0d;
+  --lp-card: rgba(255, 255, 255, 0.04);
+  --lp-card-2: rgba(255, 255, 255, 0.06);
+  --lp-border: rgba(255, 255, 255, 0.11);
+  --lp-text: #f4f7f5;
+  --lp-muted: #8a918d;
+  --lp-neon: #b6ff00;
+  --lp-neon-2: #a3ff12;
+  --lp-glow: rgba(182, 255, 0, 0.35);
+}
+.lp-root {
+  background: var(--lp-bg);
+  color: var(--lp-text);
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* subtle background grid, faded toward edges */
+.lp-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, #000 35%, transparent 100%);
+          mask-image: radial-gradient(ellipse 90% 70% at 50% 30%, #000 35%, transparent 100%);
+}
+
+/* radial neon glow blob */
+.lp-glow {
+  background: radial-gradient(circle at center, var(--lp-glow) 0%, transparent 68%);
+  filter: blur(46px);
+  pointer-events: none;
+}
+
+/* giant ghost wordmark behind hero */
+.lp-ghost {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.045);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* cards */
+.lp-card {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-border);
+  -webkit-backdrop-filter: blur(14px);
+          backdrop-filter: blur(14px);
+}
+.lp-card-hover {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s, box-shadow 0.35s;
+}
+.lp-card-hover:hover {
+  transform: translateY(-5px);
+  border-color: rgba(182, 255, 0, 0.32);
+  box-shadow: 0 18px 50px -20px rgba(182, 255, 0, 0.18);
+}
+
+/* neon accent card (the prominent middle one) */
+.lp-card-neon {
+  background: linear-gradient(160deg, var(--lp-neon) 0%, #9fe600 100%);
+  color: #0a1400;
+  box-shadow: 0 24px 70px -28px var(--lp-glow);
+}
+
+/* buttons */
+.lp-btn-neon {
+  background: var(--lp-neon);
+  color: #0a1400;
+  box-shadow: 0 0 0 rgba(182, 255, 0, 0);
+  transition: transform 0.25s, box-shadow 0.25s, background 0.25s;
+}
+.lp-btn-neon:hover {
+  transform: translateY(-2px);
+  background: #c7ff3a;
+  box-shadow: 0 12px 34px -8px var(--lp-glow);
+}
+.lp-btn-ghost {
+  border: 1px solid var(--lp-border);
+  color: var(--lp-text);
+  transition: border-color 0.25s, background 0.25s, transform 0.25s;
+}
+.lp-btn-ghost:hover {
+  border-color: rgba(182, 255, 0, 0.4);
+  background: rgba(182, 255, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.lp-neon-text { color: var(--lp-neon); }
+.lp-muted { color: var(--lp-muted); }
+
+/* animations */
+@keyframes lpFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+}
+@keyframes lpFloatSm {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+@keyframes lpPulseGlow {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.95; }
+}
+@keyframes lpSpin { to { transform: rotate(360deg); } }
+@keyframes lpDraw { to { stroke-dashoffset: 0; } }
+@keyframes lpReveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+.lp-float { animation: lpFloat 7s ease-in-out infinite; }
+.lp-float-sm { animation: lpFloatSm 5.5s ease-in-out infinite; }
+.lp-float-delay { animation: lpFloat 8s ease-in-out infinite; animation-delay: -2.5s; }
+.lp-pulse-glow { animation: lpPulseGlow 4s ease-in-out infinite; }
+.lp-orbit { animation: lpSpin 26s linear infinite; transform-origin: center; }
+.lp-orbit-rev { animation: lpSpin 34s linear infinite reverse; transform-origin: center; }
+.lp-draw {
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: lpDraw 2.4s ease-out 0.3s forwards;
+}
+.lp-reveal { opacity: 0; animation: lpReveal 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-float, .lp-float-sm, .lp-float-delay, .lp-pulse-glow, .lp-orbit, .lp-orbit-rev { animation: none; }
+  .lp-draw { stroke-dashoffset: 0; animation: none; }
+  .lp-reveal { opacity: 1; animation: none; }
 }

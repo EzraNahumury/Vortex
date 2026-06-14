@@ -110,7 +110,7 @@ export const mockPositions: Position[] = [
     status: "active",
     collateralAsset: "USDC", // Legacy/Primary
     collateralAmount: 45000,
-    liquidationPrice: 1.85,
+    liquidationPrice: 0.72,
     collaterals: [
       { asset: "USDC", amount: 45000 }
     ]

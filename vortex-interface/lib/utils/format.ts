@@ -1,14 +1,15 @@
 export function formatNumber(value: number, decimals: number = 2): string {
-  if (value >= 1000000000) {
-    return `${(value / 1000000000).toFixed(decimals)}B`;
+  const v = Number.isFinite(value) ? value : 0;
+  if (v >= 1000000000) {
+    return `${(v / 1000000000).toFixed(decimals)}B`;
   }
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(decimals)}M`;
+  if (v >= 1000000) {
+    return `${(v / 1000000).toFixed(decimals)}M`;
   }
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(decimals)}K`;
+  if (v >= 1000) {
+    return `${(v / 1000).toFixed(decimals)}K`;
   }
-  return value.toFixed(decimals);
+  return v.toFixed(decimals);
 }
 
 export function formatCurrency(value: number, currency: string = "USD"): string {
@@ -21,7 +22,8 @@ export function formatCurrency(value: number, currency: string = "USD"): string 
 }
 
 export function formatPercentage(value: number): string {
-  return `${value.toFixed(2)}%`;
+  const v = Number.isFinite(value) ? value : 0;
+  return `${v.toFixed(2)}%`;
 }
 
 export function shortenAddress(address: string, chars: number = 4): string {
@@ -29,7 +31,9 @@ export function shortenAddress(address: string, chars: number = 4): string {
 }
 
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("en-US", {
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",

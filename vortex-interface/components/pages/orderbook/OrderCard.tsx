@@ -21,12 +21,12 @@ export function OrderCard({ order, onCancel }: OrderCardProps) {
   };
 
   return (
-    <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-5 card-hover">
+    <div className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))]/60 backdrop-blur-xl p-5 transition hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/0.3)]">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-            order.type === "lend" 
-              ? "bg-[hsl(var(--success))]/20" 
+            order.type === "lend"
+              ? "bg-[hsl(var(--success))]/20"
               : "bg-[hsl(var(--warning))]/20"
           }`}>
             <span className={`text-sm font-bold ${
@@ -58,28 +58,28 @@ export function OrderCard({ order, onCancel }: OrderCardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-1">Amount</p>
-          <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-3">
+          <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">Amount</p>
+          <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
             ${formatNumber(order.amount)}
           </p>
         </div>
-        <div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-1">Interest Rate</p>
-          <p className="text-sm font-medium text-[hsl(var(--primary))]">
+        <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-3">
+          <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">Interest Rate</p>
+          <p className="text-sm font-semibold text-[hsl(var(--primary))]">
             {formatPercentage(order.interestRate)}
           </p>
         </div>
-        <div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-1">LTV</p>
-          <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+        <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-3">
+          <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">LTV</p>
+          <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
             {formatPercentage(order.ltv)}
           </p>
         </div>
-        <div>
-          <p className="text-xs text-[hsl(var(--muted-foreground))] mb-1">Term</p>
-          <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+        <div className="rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-3">
+          <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">Term</p>
+          <p className="text-sm font-semibold text-[hsl(var(--foreground))]">
             {order.term} days
           </p>
         </div>

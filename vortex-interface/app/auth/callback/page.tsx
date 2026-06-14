@@ -93,7 +93,7 @@ export default function AuthCallbackPage() {
         setMessage("Authentication successful! Redirecting...");
 
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        window.location.href = "/?auth=success";
+        window.location.href = "/predict?auth=success";
       } catch (zkError) {
         console.error("zkLogin completion error:", zkError);
         setStatus("error");

@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { useSuiClient, useCurrentAccount } from "@mysten/dapp-kit";
 import { getCoinType, getDecimalsForAsset } from "@/lib/sui/blockchain-service";
+import { isMockMode } from "@/lib/config";
 
 interface CreateOrderFormProps {
   type: "lend" | "borrow";
@@ -180,12 +181,17 @@ export function CreateOrderForm({ type, onSubmit, isSubmitting = false }: Create
     
     const amountNum = parseFloat(amount);
 
+    // In mock mode the executor simulates success and ignores real on-chain balances /
+    // coin objects, so skip the balance + coin-object guards (they would otherwise always
+    // fail against the empty real-chain balances).
+    const mock = isMockMode();
+
     if (type === "lend") {
-      if (amountNum > assetBalance) {
+      if (!mock && amountNum > assetBalance) {
         toast.error(`Insufficient ${asset} balance`);
         return;
       }
-      if (asset !== "SUI" && !coinObjectId) {
+      if (!mock && asset !== "SUI" && !coinObjectId) {
         toast.error(`No suitable ${asset} coin found. Please mint some tokens.`);
         return;
       }
@@ -199,7 +205,7 @@ export function CreateOrderForm({ type, onSubmit, isSubmitting = false }: Create
       for (const [coin, amt] of Object.entries(collateralAmounts)) {
           const val = parseFloat(amt || "0");
           if (val > 0) {
-              if (val > balances[coin]) {
+              if (!mock && val > balances[coin]) {
                   toast.error(`Insufficient ${coin} balance`);
                   return;
               }
@@ -346,7 +352,7 @@ export function CreateOrderForm({ type, onSubmit, isSubmitting = false }: Create
       </div>
 
       {type === "borrow" && (
-        <div className="space-y-4 border border-[hsl(var(--border))] rounded-xl p-4 bg-[hsl(var(--card))]/50">
+        <div className="space-y-4 rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4">
           <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-[hsl(var(--foreground))]">
                 Multi-Collateral
@@ -464,9 +470,11 @@ export function CreateOrderForm({ type, onSubmit, isSubmitting = false }: Create
         </Select>
       </div>
 
-      <div className="flex items-center justify-between p-4 bg-[hsl(var(--secondary))] rounded-xl">
+      <div className="flex items-center justify-between rounded-xl border border-[hsl(var(--border))] bg-white/[0.02] p-4">
         <div className="flex items-center gap-3">
-          <EyeOff className="w-5 h-5 text-[hsl(var(--primary))]" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--primary)/0.15)]">
+            <EyeOff className="w-4 h-4 text-[hsl(var(--primary))]" />
+          </span>
           <div>
             <p className="text-sm font-medium text-[hsl(var(--foreground))]">ZK Hidden Order</p>
             <p className="text-xs text-[hsl(var(--muted-foreground))]">
@@ -484,7 +492,7 @@ export function CreateOrderForm({ type, onSubmit, isSubmitting = false }: Create
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="w-full cursor-pointer bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary))]/90 disabled:opacity-50"
+        className="w-full cursor-pointer rounded-full bg-[hsl(var(--primary))] font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110 disabled:opacity-50"
       >
         {isSubmitting ? "Submitting..." : `Place ${type === "lend" ? "Lend" : "Borrow"} Order`}
       </Button>

@@ -1,7 +1,7 @@
 "use client";
 
-import { 
-  ConnectButton as DappKitConnectButton,
+import {
+  ConnectModal,
   useCurrentAccount,
   useDisconnectWallet,
 } from "@mysten/dapp-kit";
@@ -18,7 +18,6 @@ import { Wallet, Copy, LogOut, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { useSuiClient } from "@mysten/dapp-kit";
-import { isMockMode } from "@/lib/config";
 
 function formatAddress(address: string): string {
   if (address.length <= 12) return address;
@@ -31,17 +30,13 @@ export function ConnectButton() {
   const suiClient = useSuiClient();
   const { connectWallet, disconnectWallet, user } = useAppStore();
   const [suiBalance, setSuiBalance] = useState(0);
+  const [open, setOpen] = useState(false);
 
   // Fetch balance when connected
   useEffect(() => {
     const fetchBalance = async () => {
       if (!account?.address) {
         setSuiBalance(0);
-        return;
-      }
-      
-      if (isMockMode()) {
-        setSuiBalance(50000);
         return;
       }
 
@@ -138,14 +133,16 @@ export function ConnectButton() {
     );
   }
 
-  // Use dapp-kit's built-in connect button with custom styling
+  // Custom neon connect button (matches the landing) backed by dapp-kit's modal.
   return (
-    <DappKitConnectButton 
-      connectText={
-        <>
+    <ConnectModal
+      open={open}
+      onOpenChange={setOpen}
+      trigger={
+        <button className="inline-flex h-9 cursor-pointer items-center rounded-full bg-[hsl(var(--primary))] px-4 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-all hover:brightness-110 hover:shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.6)]">
           <Wallet className="w-4 h-4 mr-2" />
           Connect Wallet
-        </>
+        </button>
       }
     />
   );

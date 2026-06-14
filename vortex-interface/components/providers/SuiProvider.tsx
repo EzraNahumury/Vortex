@@ -19,6 +19,9 @@ const networks = {
   devnet: { url: "https://fullnode.devnet.sui.io:443", network: "devnet" as const },
 };
 
+// Synthetic address used in mock mode so demo data + mock actions work without a real wallet.
+const MOCK_WALLET_ADDRESS = "0x" + "0".repeat(63) + "1";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -52,7 +55,8 @@ export function useWallet() {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const fetchBalance = useCallback(async (userAddress: string) => {
-    if (isMockMode()) {
+    // Only the synthetic mock wallet uses a demo balance; a real connected wallet shows its real balance.
+    if (isMockMode() && userAddress === MOCK_WALLET_ADDRESS) {
       setSuiBalance(50000);
       return;
     }
@@ -69,23 +73,27 @@ export function useWallet() {
     }
   }, [suiClient]);
 
+  // A real connected wallet always takes precedence; in mock mode (no real wallet) fall back to
+  // a synthetic connected address so demo data loads and mock actions complete without a wallet.
+  const address = account?.address ?? (isMockMode() ? MOCK_WALLET_ADDRESS : null);
+
   const refreshBalance = useCallback(async () => {
-    if (account?.address) {
-      await fetchBalance(account.address);
+    if (address) {
+      await fetchBalance(address);
     }
-  }, [account?.address, fetchBalance]);
+  }, [address, fetchBalance]);
 
   useEffect(() => {
-    if (account?.address) {
-      fetchBalance(account.address);
+    if (address) {
+      fetchBalance(address);
     } else {
       setSuiBalance(0);
     }
-  }, [account?.address, fetchBalance]);
+  }, [address, fetchBalance]);
 
   return {
-    isConnected: !!account,
-    address: account?.address || null,
+    isConnected: !!address,
+    address,
     suiBalance,
     isConnecting,
     refreshBalance,
