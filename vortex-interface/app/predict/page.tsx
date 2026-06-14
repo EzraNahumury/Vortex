@@ -35,6 +35,9 @@ interface VaultState {
   hedgeSpent: number;
 }
 
+// Modeled hedge carry: fraction of live PLP yield given up to the crash hedge (calibrated in SIMULATION.md).
+const HEDGE_CARRY = 0.36;
+
 function explorerTx(d: string) {
   return `https://suiscan.xyz/testnet/tx/${d}`;
 }
@@ -261,12 +264,18 @@ export default function PredictPage() {
             <span className="h-1 w-1 rounded-full bg-[hsl(var(--primary))]" />
             Live yield
           </div>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Stat
               icon={<Activity className="h-4 w-4 text-[hsl(var(--success))]" />}
               label="Live PLP APY (protocol)"
               value={`${(plpApy * 100).toFixed(2)}%`}
               accent="success"
+            />
+            <Stat
+              icon={<ShieldCheck className="h-4 w-4 text-[hsl(var(--primary-foreground))]" />}
+              label="Net APY after hedge (modeled)"
+              value={`${(plpApy * (1 - HEDGE_CARRY) * 100).toFixed(2)}%`}
+              featured
             />
             <Stat
               icon={<Layers className="h-4 w-4" />}
@@ -280,9 +289,10 @@ export default function PredictPage() {
             />
           </div>
           <p className="text-xs leading-relaxed text-[hsl(var(--muted-foreground))]">
-            Live PLP APY is annualized from the protocol&apos;s on-chain share-price series. The signed
-            hedge sleeve gives up a slice of this carry to roughly halve left-tail drawdown (see
-            SIMULATION.md for the modeled trade-off).
+            Live PLP APY is annualized from the protocol&apos;s on-chain share-price series. &ldquo;Net
+            APY after hedge&rdquo; is a <span className="text-[hsl(var(--foreground))]">modeled</span> estimate
+            — live APY minus the crash-hedge carry (~{(HEDGE_CARRY * 100).toFixed(0)}% of yield, calibrated in
+            SIMULATION.md); the hedge roughly halves left-tail drawdown.
           </p>
         </section>
 
