@@ -20,6 +20,37 @@ earn the LP maker spread, hedged against left-tail drawdown, with every allocati
 
 ---
 
+## The pitch
+
+**The problem.** Supplying DeepBook Predict's pool (PLP) earns a steady maker spread — but one BTC
+gap-down wipes the LP's left tail. Great carry, ugly crash. That tail risk is exactly what keeps
+serious LPs out of prediction-market liquidity.
+
+**The solution.** Vortex is a **one-deposit vault** that earns the PLP spread **and** spends a sliver
+on out-of-the-money BTC puts as crash insurance — *PLP yield, minus the crash*. You hold a portable
+`VAULT_SHARE` coin: bounded drawdown, composable across Sui DeFi.
+
+**Why it wins.** Most Predict entries are dashboards, analytics, or concepts. Vortex is a **deployed,
+working vault** where:
+- every allocation is **ed25519-signed and verified on-chain** — *yield you can audit*, not a black box;
+- the full **deposit → supply → hedge → settle → redeem → withdraw** cycle runs **on-chain** (verified digests in [DEMO.md](DEMO.md));
+- a **keeper runs unattended** on GitHub Actions — redeeming settled hedges and rolling fresh ones every 30 minutes;
+- it's **live today** — frontend on Vercel, vault on Sui testnet.
+
+**Live proof.**
+- 🌐 Demo — **[vortex-sui.vercel.app](https://vortex-sui.vercel.app)**
+- ⛓️ Vault `0xa45ebd…1314f3` · Package `0x185d97…266e83` (Sui testnet)
+- 🧾 End-to-end run (deposit / supply / hedge / redeem digests) — **[DEMO.md](DEMO.md)**
+
+**The tech.** A single dependency-light Move package (`vortex_predict::vault`) composing
+`predict::supply / mint / withdraw / redeem_permissionless`; a Next.js real-on-chain frontend; an
+unattended keeper. See [Architecture](#architecture) and [How it works](#how-it-works) below.
+
+**The ask.** Judge it on the bar that matters for a *product*: **does it actually work on-chain, and
+can you trust the strategy?** Vortex answers both — verifiable, live, automated.
+
+---
+
 ## TL;DR
 
 Raw PLP (supplying the Predict pool) earns a steady maker spread but wears the **full left tail**
