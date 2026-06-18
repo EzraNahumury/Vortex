@@ -34,7 +34,7 @@ const NAV: { group: string; items: { id: string; t: string }[] }[] = [
   {
     group: "Application",
     items: [
-      { id: "app", t: "App & pages" },
+      { id: "app", t: "App & structure" },
       { id: "keeper", t: "Keeper & automation" },
     ],
   },
@@ -207,9 +207,9 @@ export default function DocsPage() {
           <section id="quick-start" className="scroll-mt-24">
             <H2>Quick start</H2>
             <p>The app defaults to the live testnet deployment — no environment setup needed to browse.</p>
-            <pre><code>{`cd vortex-interface
+            <Code label="terminal">{`cd vortex-interface
 npm install
-npm run dev      # http://localhost:3000  ->  Connect Wallet  ->  /predict`}</code></pre>
+npm run dev      # http://localhost:3000  ->  Connect Wallet  ->  /predict`}</Code>
             <ol className="my-4 list-decimal space-y-2 pl-5">
               <li>Open the app (local, or <a href={DEMO} target="_blank" rel="noreferrer">vortex-sui.vercel.app</a>) and <strong>Connect Wallet</strong> (Sui testnet).</li>
               <li>Request <strong>dUSDC</strong> from the DeepBook form: <a href="https://tally.so/r/Xx102L" target="_blank" rel="noreferrer">tally.so/r/Xx102L</a> (dUSDC is not the normal testnet USDC).</li>
@@ -263,9 +263,9 @@ npm run dev      # http://localhost:3000  ->  Connect Wallet  ->  /predict`}</co
     V->>P: predict::supply / mint / withdraw / redeem
     Note over V,P: anyone can re-derive the bytes and audit the allocation`}</pre>
             <p>Byte layouts in <code>lib/predict/strategist.ts</code> match <code>vortex_predict::vault</code> exactly:</p>
-            <pre><code>{`supply        : 0x01 | vault_id | nonce | amount
+            <Code label="lib/predict/strategist.ts">{`supply        : 0x01 | vault_id | nonce | amount
 hedge         : 0x02 | vault_id | nonce | oracle_id | expiry | strike | is_up | quantity | budget
-withdraw_plp  : 0x03 | vault_id | nonce | plp_amount`}</code></pre>
+withdraw_plp  : 0x03 | vault_id | nonce | plp_amount`}</Code>
           </section>
 
           {/* CONTRACTS OVERVIEW */}
@@ -282,7 +282,7 @@ withdraw_plp  : 0x03 | vault_id | nonce | plp_amount`}</code></pre>
           <section id="predictvault" className="scroll-mt-24">
             <H3>PredictVault&lt;Quote&gt;</H3>
             <p>A shared object holding the vault&apos;s balances and strategy state.</p>
-            <pre><code>{`public struct PredictVault<phantom Quote> has key {
+            <Code label="sources/vault.move">{`public struct PredictVault<phantom Quote> has key {
     idle:                Balance<Quote>,   // un-deployed dUSDC
     plp:                 Balance<PLP>,     // supplied to the Predict pool
     share_treasury:      TreasuryCap<VAULT_SHARE>,
@@ -293,7 +293,7 @@ withdraw_plp  : 0x03 | vault_id | nonce | plp_amount`}</code></pre>
     strategist_pubkey:   vector<u8>,       // ed25519 verify key
     last_nonce:          u64,              // replay protection
     manager_id:          Option<ID>,       // keeper-owned PredictManager
-}`}</code></pre>
+}`}</Code>
           </section>
 
           {/* API */}
@@ -354,8 +354,10 @@ withdraw_plp  : 0x03 | vault_id | nonce | plp_amount`}</code></pre>
 
           {/* APP */}
           <section id="app" className="scroll-mt-24">
-            <H2>App &amp; pages</H2>
-            <p>The Next.js frontend (<a href={DEMO} target="_blank" rel="noreferrer">live</a>) is real on-chain — every figure comes from the vault object, the indexer, or live events.</p>
+            <H2>App &amp; project structure</H2>
+            <p>The Next.js frontend (<a href={DEMO} target="_blank" rel="noreferrer">live</a>) is real on-chain — every figure comes from the vault object, the indexer, or live events. The Move package and the keeper sit alongside it in one monorepo.</p>
+            <FileTree />
+            <H3>Routes</H3>
             <Table
               head={["Route", "What it does"]}
               rows={[
@@ -371,12 +373,12 @@ withdraw_plp  : 0x03 | vault_id | nonce | plp_amount`}</code></pre>
           <section id="keeper" className="scroll-mt-24">
             <H2>Keeper &amp; automation</H2>
             <p>Strategy legs are signed off-chain and submitted by a keeper — run manually or unattended.</p>
-            <pre><code>{`cd vortex-interface
+            <Code label="terminal">{`cd vortex-interface
 npx tsx scripts/keeper.mts status              # read vault + live oracles
 npx tsx scripts/keeper.mts supply 5            # supply 5 dUSDC -> PLP
 npx tsx scripts/keeper.mts hedge 1 0.5 0.1     # mint OTM-down hedge (budget, OTM%, qty)
 npx tsx scripts/keeper.mts unwind              # unwind PLP back to idle
-npx tsx scripts/keeper.mts redeem-settled      # redeem every settled-but-open hedge`}</code></pre>
+npx tsx scripts/keeper.mts redeem-settled      # redeem every settled-but-open hedge`}</Code>
             <p>
               <code>.github/workflows/keeper.yml</code> runs <code>redeem-settled</code> + a fresh hedge every 30 minutes
               on GitHub Actions. Keys live in repo <strong>Secrets</strong> (<code>DEPLOYER_MNEMONIC</code>,{" "}
@@ -470,5 +472,144 @@ function Table({ head, rows, mono }: { head: string[]; rows: string[][]; mono?: 
         </tbody>
       </table>
     </div>
+  );
+}
+
+/* mac-window code block */
+function Code({ children, label }: { children: string; label?: string }) {
+  return (
+    <div className="codewin my-5">
+      <div className="bar">
+        <span className="dot" style={{ background: "#ff5f57" }} />
+        <span className="dot" style={{ background: "#febc2e" }} />
+        <span className="dot" style={{ background: "#28c840" }} />
+        {label && <span className="ml-2 font-mono text-[11px] text-white/40">{label}</span>}
+      </div>
+      <pre><code>{children}</code></pre>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* project structure card (file tree)                                  */
+/* ------------------------------------------------------------------ */
+const TREE: { name: string; sub: string; color: string; files: [string, string][] }[] = [
+  {
+    name: "app/", sub: "App Router pages", color: "#d97706",
+    files: [
+      ["layout.tsx", "root · fonts, providers, navbar"],
+      ["page.tsx", "/ → landing"],
+      ["predict/page.tsx", "deposit · SVI smile · ladder"],
+      ["activity/page.tsx", "on-chain event feed"],
+      ["redeem/page.tsx", "settled-hedge redeem"],
+      ["faucet/page.tsx", "testnet tokens"],
+      ["globals.css", "Tailwind v4 · theme"],
+    ],
+  },
+  {
+    name: "components/", sub: "React components", color: "#7c3aed",
+    files: [
+      ["shared/Navbar.tsx", "nav pill + wallet"],
+      ["shared/ConnectButton.tsx", "connect / account"],
+      ["shared/AppBackground.tsx", "neon backdrop"],
+      ["providers/SuiProvider.tsx", "dapp-kit + wallet"],
+      ["ui/", "15+ shadcn primitives"],
+    ],
+  },
+  {
+    name: "lib/", sub: "Utilities · config", color: "#2563eb",
+    files: [
+      ["predict/strategist.ts", "ed25519 leg signing"],
+      ["predict/svi.ts", "SVI vol surface"],
+      ["predict/server.ts", "indexer client"],
+      ["predict/transactions.ts", "PTB builders"],
+      ["sui/client.ts", "Sui client (SSR)"],
+      ["store/index.ts", "zustand store"],
+      ["utils/format.ts", "number / date format"],
+    ],
+  },
+  {
+    name: "scripts/", sub: "Keeper · sim", color: "#16a34a",
+    files: [
+      ["keeper.mts", "supply / hedge / redeem CLI"],
+      ["simulate-plp-hedge.mts", "back-test"],
+      ["register-enclave.mts", "Nautilus setup"],
+    ],
+  },
+  {
+    name: "contracts/vortex_predict/", sub: "Move package", color: "#b45309",
+    files: [
+      ["sources/vault.move", "vault + signed legs"],
+      ["sources/vault_share.move", "VAULT_SHARE coin"],
+      ["Move.toml", "package + deps"],
+    ],
+  },
+  {
+    name: "public/", sub: "Static assets", color: "#64748b",
+    files: [
+      ["logo.png", "Vortex mark"],
+      ["logosui.png", "Sui logo"],
+    ],
+  },
+];
+
+function FileTree() {
+  return (
+    <div className="my-6 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--soft)]">
+      <div className="flex items-center gap-2.5 border-b border-[var(--border)] bg-white px-5 py-3.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" className="h-5 w-5 object-contain" />
+        <span className="font-mono text-sm font-semibold">vortex/</span>
+        <span className="text-xs text-[var(--muted)]">Next.js App Router · Move on Sui</span>
+      </div>
+      <div className="grid gap-3.5 p-3.5 sm:grid-cols-2">
+        {TREE.map((f) => (
+          <div key={f.name} className="rounded-xl border border-[var(--border)] bg-white p-3.5">
+            <div className="mb-2.5 flex items-center gap-2">
+              <FolderIcon color={f.color} />
+              <span className="font-mono text-[13px] font-semibold">{f.name}</span>
+              <span className="ml-auto text-[10.5px] uppercase tracking-wide text-[var(--muted)]">{f.sub}</span>
+            </div>
+            <ul className="space-y-1.5">
+              {f.files.map(([file, desc]) => (
+                <li key={file} className="flex items-baseline gap-2">
+                  <FileIcon name={file} />
+                  <span className="font-mono text-[12.5px] text-[var(--foreground)]">{file}</span>
+                  <span className="truncate text-[11px] text-[var(--muted)]">{desc}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FolderIcon({ color }: { color: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0" style={{ color }} aria-hidden>
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor" fillOpacity="0.16" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FileIcon({ name }: { name: string }) {
+  const dir = name.endsWith("/");
+  const ext = name.split(".").pop() || "";
+  if (dir) return <FolderIcon color="#94a3b8" />;
+  const color =
+    ext === "tsx" ? "#2563eb" :
+    ext === "ts" || ext === "mts" ? "#16a34a" :
+    ext === "css" ? "#db2777" :
+    ext === "move" ? "#b45309" :
+    ext === "toml" || ext === "lock" ? "#6b7280" :
+    ext === "png" || ext === "svg" ? "#0ea5e9" :
+    "#94a3b8";
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0" style={{ color }} aria-hidden>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M14 2v6h6" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
   );
 }
