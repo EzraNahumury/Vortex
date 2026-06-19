@@ -10,13 +10,14 @@ earn the LP maker spread, hedged against left-tail drawdown, with every allocati
 [![Live demo](https://img.shields.io/badge/demo-vortex--sui.vercel.app-b6ff00?style=flat-square&logo=vercel&logoColor=black)](https://vortex-sui.vercel.app)
 &nbsp;[![Docs](https://img.shields.io/badge/docs-docs--vortex.vercel.app-3a7600?style=flat-square&logo=readthedocs&logoColor=white)](https://docs-vortex.vercel.app)
 &nbsp;[![Video](https://img.shields.io/badge/demo-video-ff0000?style=flat-square&logo=youtube&logoColor=white)](https://youtu.be/xiM8CE8MFmw)
+&nbsp;[![Submission](https://img.shields.io/badge/submission-DeepSurge-7c5cff?style=flat-square)](https://www.deepsurge.xyz/projects/590f0481-f4a7-41a0-9240-607c265e35a7)
 &nbsp;![Sui](https://img.shields.io/badge/Sui-Testnet-4da2ff?style=flat-square)
 &nbsp;![DeepBook Predict](https://img.shields.io/badge/DeepBook-Predict-1ee0a0?style=flat-square)
 &nbsp;![Move](https://img.shields.io/badge/Move-2024-555?style=flat-square)
 &nbsp;![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=nextdotjs)
 &nbsp;![Keeper](https://img.shields.io/badge/keeper-GitHub%20Actions-2088ff?style=flat-square&logo=githubactions&logoColor=white)
 
-[Live demo](https://vortex-sui.vercel.app) · [Docs](https://docs-vortex.vercel.app) · [Video](https://youtu.be/xiM8CE8MFmw) · [Architecture](#architecture) · [How it works](#how-it-works) · [Deployment](#live-testnet-deployment) · [Quick start](#quick-start) · [Keeper](#keeper-automation)
+[Live demo](https://vortex-sui.vercel.app) · [Docs](https://docs-vortex.vercel.app) · [Video](https://youtu.be/xiM8CE8MFmw) · [Submission](https://www.deepsurge.xyz/projects/590f0481-f4a7-41a0-9240-607c265e35a7) · [Architecture](#architecture) · [How it works](#how-it-works) · [Deployment](#live-testnet-deployment) · [Quick start](#quick-start) · [Keeper](#keeper-automation)
 
 </div>
 
@@ -43,6 +44,7 @@ working vault** where:
 - 🌐 Demo — **[vortex-sui.vercel.app](https://vortex-sui.vercel.app)**
 - 📖 Docs — **[docs-vortex.vercel.app](https://docs-vortex.vercel.app)**
 - 🎬 Demo video — **[youtu.be/xiM8CE8MFmw](https://youtu.be/xiM8CE8MFmw)**
+- 🏆 Submission — **[deepsurge.xyz](https://www.deepsurge.xyz/projects/590f0481-f4a7-41a0-9240-607c265e35a7)**
 - ⛓️ Vault `0xa45ebd…1314f3` · Package `0x185d97…266e83` (Sui testnet)
 - 🧾 End-to-end run (deposit / supply / hedge / redeem digests) — **[DEMO.md](DEMO.md)**
 
@@ -270,6 +272,6 @@ contracts/vortex/              # prior work: Vortex order-book lending protocol 
 
 Built for **Sui Overflow · DeepBook Predict track** — *yield you can audit.*
 
-[Live demo](https://vortex-sui.vercel.app) · [Docs](https://docs-vortex.vercel.app) · [Video](https://youtu.be/xiM8CE8MFmw) · [DEMO.md](DEMO.md) · [SIMULATION.md](SIMULATION.md)
+[Live demo](https://vortex-sui.vercel.app) · [Docs](https://docs-vortex.vercel.app) · [Video](https://youtu.be/xiM8CE8MFmw) · [Submission](https://www.deepsurge.xyz/projects/590f0481-f4a7-41a0-9240-607c265e35a7) · [DEMO.md](DEMO.md) · [SIMULATION.md](SIMULATION.md)
 
 </div>
